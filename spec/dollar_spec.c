@@ -21,7 +21,7 @@ context "dollar"
   before each
   {
     flu_dict *dict = flu_d(
-      "red", "fox", "green", "frog", "blue", "bird", NULL);
+      "brown", "fox", "lazy", "dog", "quick", "jump", NULL);
   }
   after each
   {
@@ -30,6 +30,17 @@ context "dollar"
 
   describe "fdol_expand()"
   {
+    it "returns a copy of the string, even if no expansion took place"
+    {
+      char *s = "quick brown fox";
+      char *s1 = fdol_expand(s, fd_lookup, dict);
+
+      expect(s != s1);
+      expect(s === s1);
+
+      free(s1);
+    }
+
     it "expands $(red)"
     {
       expect(fdol_expand(".$(red).", fd_lookup, dict) ===f ".fox.");

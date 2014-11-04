@@ -37,6 +37,7 @@
 
 char *fdol_expand(const char *s, fdol_lookup *func, void *data)
 {
+  if (strchr(s, '$') == NULL) return strdup(s);
   return strdup(s);
 }
 
