@@ -35,9 +35,31 @@
 #include "dollar.h"
 
 
+static fabr_parser *fdol_parser = NULL;
+
+static void fdol_parser_init()
+{
+  fabr_parser *dol =
+    fabr_seq(fabr_string("$("), fabr_n("span"), fabr_string(")"), NULL);
+  fabr_parser *str =
+    fabr_n_rex("str", ".+");
+
+  fabr_parser *span =
+    fabr_n_rep("span", fabr_alt(dol, str, NULL), 0, -1);
+
+  fdol_parser = span;
+}
+
+
+//
+// fdol_expand()
+
 char *fdol_expand(const char *s, fdol_lookup *func, void *data)
 {
   if (strchr(s, '$') == NULL) return strdup(s);
+
+  if (fdol_parser == NULL) fdol_parser_init();
+
   return strdup(s);
 }
 
