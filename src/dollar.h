@@ -30,5 +30,10 @@
 
 //#include <stdio.h>
 
+
+typedef char *fdol_lookup(const char *path, void *data);
+
+char *fdol_expand(const char *s, fdol_lookup *func, void *data);
+
 #endif // FLON_DOLLAR_H
 

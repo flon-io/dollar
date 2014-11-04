@@ -27,10 +27,16 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-//#include <stdlib.h>
+#include <string.h>
 
 #include "flutil.h"
 #include "aabro.h"
 
 #include "dollar.h"
+
+
+char *fdol_expand(const char *s, fdol_lookup *func, void *data)
+{
+  return strdup(s);
+}
 
