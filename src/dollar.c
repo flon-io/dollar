@@ -233,6 +233,7 @@ char *fdol_expand(const char *s, fdol_lookup *func, void *data)
   //fabr_tree_free(tt);
 
   fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
+  //puts(fabr_tree_to_string(t, s, 1));
   char *r = expand(s, t, func, data);
   fabr_tree_free(t);
 
