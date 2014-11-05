@@ -141,7 +141,23 @@ context "dollar"
 
     context "filter pipes"
     {
-      it "understands |l>3 (length filter)"
+      it "understands |l>4 (length filter)"
+      {
+        expect(fdol_expand("$(lazy|l>4||'none)", fd_lookup, dict) ===f "none");
+        expect(fdol_expand("$(lazy|l<4||'none)", fd_lookup, dict) ===f "dog");
+
+        expect(fdol_expand("$(lazy|l<=3||'none)", fd_lookup, dict) ===f "dog");
+        expect(fdol_expand("$(lazy|l>=3||'none)", fd_lookup, dict) ===f "dog");
+
+        expect(fdol_expand("$(lazy|l=3||'none)", fd_lookup, dict) ===f "dog");
+        expect(fdol_expand("$(lazy|l=4||'none)", fd_lookup, dict) ===f "none");
+        expect(fdol_expand("$(lazy|l==3||'none)", fd_lookup, dict) ===f "dog");
+        expect(fdol_expand("$(lazy|l==4||'none)", fd_lookup, dict) ===f "none");
+
+        expect(fdol_expand("$(lazy|l!=4||'none)", fd_lookup, dict) ===f "dog");
+        expect(fdol_expand("$(lazy|l!=3||'none)", fd_lookup, dict) ===f "none");
+      }
+
       it "understands |m/xx/ (match filter)"
     }
 

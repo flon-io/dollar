@@ -130,6 +130,38 @@ static char *fun_range(char *func, char *s)
   return r;
 }
 
+static char *fun_length_filter(char *f, char *s)
+{
+  size_t sl = strlen(s);
+  size_t off = 2; if (f[2] == '=') off = 3;
+  size_t l = strtoll(f + off, NULL, 10);
+
+  //printf("flf() f \"%s\" s \"%s\" (%zu)\n", f, s, sl);
+
+  int t = 0;
+
+  if (f[1] == '=')
+  {
+    t = (sl == l);
+  }
+  else if (f[1] == '!')
+  {
+    t = (sl != l);
+  }
+  else if (off == 2)
+  {
+    if (f[1] == '<') t = (sl < l);
+    else t = (sl > l);
+  }
+  else // if (off == 3) // <= >=
+  {
+    if (f[1] == '<') t = (sl <= l);
+    else t = (sl >= l);
+  }
+
+  return t ? s : NULL;
+}
+
 static char *call(char *s, char *f)
 {
   //printf("call() >%s< on >%s<\n", f, s);
@@ -139,6 +171,7 @@ static char *call(char *s, char *f)
   if (*f == 'r') return fun_reverse(s);
   if (*f == 'u') return fun_case(toupper, s);
   if (*f == 'd') return fun_case(tolower, s);
+  if (*f == 'l') return fun_length_filter(f, s);
 
   if (*f == '-' || (*f >= '0' && *f <= '9')) return fun_range(f, s);
 
@@ -179,7 +212,7 @@ static char *eval(const char *s, fdol_lookup *func, void *data)
       {
         char *or = r;
         r = call(r, ss);
-        if (or) free(or);
+        if (or != r) free(or);
       }
 
       free(ss);
