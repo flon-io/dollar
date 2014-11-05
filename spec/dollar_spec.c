@@ -62,6 +62,16 @@ context "dollar"
     {
       expect(fdol_expand("$($(l)$(z))", fd_lookup, dict) ===f "dog");
     }
+
+    it "expands to a blank string if it doesn't find"
+    {
+      expect(fdol_expand("<$(blue)>", fd_lookup, dict) ===f "<>");
+    }
+
+    it "understands ||"
+    {
+      expect(fdol_expand("$(blue||brown)", fd_lookup, dict) ===f "fox");
+    }
   }
 }
 

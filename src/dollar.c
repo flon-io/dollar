@@ -100,8 +100,7 @@ static char *expand(const char *s, fabr_tree *t, fdol_lookup *func, void *data)
     //puts(fabr_tree_to_string(cc, s, 1));
     char *r = expand(s, cc, func, data);
     //printf("r: >%s<\n", r);
-    flu_sbputs(b, r);
-    free(r);
+    if (r) { flu_sbputs(b, r); free(r); }
   }
 
   return flu_sbuffer_to_string(b);
