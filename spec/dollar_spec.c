@@ -79,20 +79,26 @@ context "dollar"
     {
       expect(fdol_expand("$xxx", fd_lookup, dict) ===f "$xxx");
     }
+    it "doesn't expand \"x$xxx\""
+    {
+      expect(fdol_expand("x$xxx", fd_lookup, dict) ===f "x$xxx");
+    }
     it "doesn't expand \"$(nada||'$xxx)\""
     {
       expect(fdol_expand("$(nada||'$xxx)", fd_lookup, dict) ===f "$xxx");
     }
 
-    //it "accepts an escaped )"
-    //{
-    //  expect(fdol_expand("$(nada||'su\\)rf)", fd_lookup, dict) ===f "su)rf");
-    //}
-      //
-    //it "doesn't escape $$(x)"
-    //{
-    //  expect(fdol_expand("$$(brown)", fd_lookup, dict) ===f "$(brown)");
-    //}
+    it "accepts an escaped )"
+    {
+      expect(fdol_expand("$(nada||'su\\)rf)", fd_lookup, dict) ===f ""
+        "su)rf");
+    }
+    it "accepts an escaped ) (deeper)"
+    {
+      expect(fdol_expand("$(a||'$(nada||'su\\)rf))", fd_lookup, dict) ===f ""
+        "su)rf");
+    }
+    it "accepts an escaped $"
 
     context "pipes"
     {

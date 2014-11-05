@@ -51,6 +51,7 @@ static void fdol_parser_init()
     fabr_n_rex(
       "s",
       "("
+        "\\\\\\)" "|"
         "[^\\$\\)]" "|"
         "\\$[^\\(]"
       ")+");
@@ -224,11 +225,26 @@ static char *eval(const char *s, fdol_lookup *func, void *data)
   return r;
 }
 
+static char *unescape(char *s)
+{
+  char *r = calloc(strlen(s) + 1, sizeof(char));
+  for (size_t i = 0, j = 0; s[i] != 0; ++i)
+  {
+    if (s[i] != '\\') r[j++] = s[i];
+  }
+  free(s);
+
+  return r;
+}
+
 static char *expand(const char *s, fabr_tree *t, fdol_lookup *func, void *data)
 {
   //puts(fabr_tree_to_string(t, s, 1));
 
-  if (*t->name == 's') return fabr_tree_string(s, t);
+  if (*t->name == 's')
+  {
+    return unescape(fabr_tree_string(s, t));
+  }
 
   if (*t->name == 'd')
   {
@@ -259,8 +275,10 @@ char *fdol_expand(const char *s, fdol_lookup *func, void *data)
   if (fdol_parser == NULL) fdol_parser_init();
 
   //printf("s >%s<\n", s);
-  ////fabr_tree *tt = fabr_parse_f(s, 0, fdol_parser, FABR_F_ALL);
-  ////fabr_tree *tt = fabr_parse_f(s, 0, fdol_parser, FABR_F_PRUNE | FABR_F_ALL);
+  ////fabr_tree *tt =
+  ////  fabr_parse_f(s, 0, fdol_parser, FABR_F_ALL);
+  ////fabr_tree *tt =
+  ////  fabr_parse_f(s, 0, fdol_parser, FABR_F_PRUNE | FABR_F_ALL);
   //fabr_tree *tt = fabr_parse_all(s, 0, fdol_parser);
   //puts(fabr_tree_to_string(tt, s, 1));
   //fabr_tree_free(tt);
