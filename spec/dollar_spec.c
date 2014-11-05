@@ -71,17 +71,22 @@ context "dollar"
       expect(fdol_expand("<$(blue)>", fd_lookup, dict) ===f "<>");
     }
 
+    //it "doesn't escape $$(x)"
+    //{
+    //  expect(fdol_expand("$$(brown)", fd_lookup, dict) ===f "$(brown)");
+    //}
+
     context "pipes"
     {
-      it "understands ||"
+      it "understands || (or)"
       {
         expect(fdol_expand("$(blue||brown)", fd_lookup, dict) ===f "fox");
       }
-      it "understands |r"
+      it "understands |r (reverse)"
       {
         expect(fdol_expand("$(brown|r)", fd_lookup, dict) ===f "xof");
       }
-      it "understands |u"
+      it "understands |u (uppercase)"
       {
         expect(fdol_expand("$(brown|u)", fd_lookup, dict) ===f "FOX");
       }
@@ -89,7 +94,7 @@ context "dollar"
       {
         expect(fdol_expand("$(brown|u|r)", fd_lookup, dict) ===f "XOF");
       }
-      it "understands |d"
+      it "understands |d (downcase)"
       {
         expect(fdol_expand("$(black|d)", fd_lookup, dict) ===f "pug");
       }
@@ -111,6 +116,15 @@ context "dollar"
       {
         expect(fdol_expand("$(nada||'text|u)", fd_lookup, dict) ===f "TEXT");
       }
+
+      it "understands |c (capitalize)"
+      it "understands |s/xx/yy/ (substitution filter)"
+    }
+
+    context "filter pipes"
+    {
+      it "understands |l>3 (length filter)"
+      it "understands |m/xx/ (match filter)"
     }
 
     context "combos"
