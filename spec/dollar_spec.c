@@ -27,6 +27,7 @@ context "dollar"
       "quick", "jump",
       "l", "la",
       "z", "zy",
+      "black", "PuG",
       NULL);
   }
   after each
@@ -78,6 +79,18 @@ context "dollar"
       it "understands |r"
       {
         expect(fdol_expand("$(brown|r)", fd_lookup, dict) ===f "xof");
+      }
+      it "understands |u"
+      {
+        expect(fdol_expand("$(brown|u)", fd_lookup, dict) ===f "FOX");
+      }
+      it "understands |u|r"
+      {
+        expect(fdol_expand("$(brown|u|r)", fd_lookup, dict) ===f "XOF");
+      }
+      it "understands |d"
+      {
+        expect(fdol_expand("$(black|d)", fd_lookup, dict) ===f "pug");
       }
     }
   }

@@ -27,6 +27,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -85,7 +86,7 @@ static void fdol_parser_init()
 //
 // fdol_expand()
 
-static char *fun_reverse(char *func, char *s)
+static char *fun_reverse(char *s)
 {
   size_t l = strlen(s);
   char *r = calloc(l + 1, sizeof(char));
@@ -95,11 +96,23 @@ static char *fun_reverse(char *func, char *s)
   return r;
 }
 
+static char *fun_case(int (* f)(int), char *s)
+{
+  size_t l = strlen(s);
+  char *r = calloc(l + 1, sizeof(char));
+
+  for (size_t i = 0; i < l; ++i) r[i] = f(s[i]);
+
+  return r;
+}
+
 static char *call(char *s, char *func)
 {
   //printf("call() >%s< on >%s<\n", func, s);
   if (s == NULL) return NULL;
-  if (*func == 'r') return fun_reverse(func, s);
+  if (*func == 'r') return fun_reverse(s);
+  if (*func == 'u') return fun_case(toupper, s);
+  if (*func == 'd') return fun_case(tolower, s);
   return strdup(s);
 }
 
