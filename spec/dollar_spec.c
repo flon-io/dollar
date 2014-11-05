@@ -92,6 +92,7 @@ context "dollar"
       {
         expect(fdol_expand("$(black|d)", fd_lookup, dict) ===f "pug");
       }
+
       it "understands |1..-1"
       {
         expect(fdol_expand("$(quick|1..-1)", fd_lookup, dict) ===f "ump");
@@ -103,6 +104,11 @@ context "dollar"
       it "understands |-3"
       {
         expect(fdol_expand("$(quick|-3)", fd_lookup, dict) ===f "u");
+      }
+
+      it "understands ||'text"
+      {
+        expect(fdol_expand("$(nada||'text|u)", fd_lookup, dict) ===f "TEXT");
       }
     }
   }

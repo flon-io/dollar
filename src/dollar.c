@@ -169,7 +169,11 @@ static char *eval(const char *s, fdol_lookup *func, void *data)
 
       if (mode == 'l')
       {
-        if (r == NULL) r = func(ss, data);
+        if (r == NULL)
+        {
+          if (*ss == '\'') r = strdup(ss + 1);
+          else r = func(ss, data);
+        }
       }
       else // (mode == 'c')
       {
