@@ -28,6 +28,7 @@ context "dollar"
       "l", "la",
       "z", "zy",
       "black", "PuG",
+      "func", "u",
       NULL);
   }
   after each
@@ -109,6 +110,14 @@ context "dollar"
       it "understands ||'text"
       {
         expect(fdol_expand("$(nada||'text|u)", fd_lookup, dict) ===f "TEXT");
+      }
+    }
+
+    context "combos"
+    {
+      it "understands |$(func)"
+      {
+        expect(fdol_expand("$(lazy|$(func))", fd_lookup, dict) ===f "DOG");
       }
     }
   }
