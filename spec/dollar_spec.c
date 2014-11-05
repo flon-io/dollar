@@ -71,6 +71,19 @@ context "dollar"
       expect(fdol_expand("<$(blue)>", fd_lookup, dict) ===f "<>");
     }
 
+    it "doesn't expand \"a)b\""
+    {
+      expect(fdol_expand("a)b", fd_lookup, dict) ===f "a)b");
+    }
+    it "doesn't expand \"$xxx\""
+    {
+      expect(fdol_expand("$xxx", fd_lookup, dict) ===f "$xxx");
+    }
+    it "doesn't expand \"$(nada||'$xxx)\""
+    {
+      expect(fdol_expand("$(nada||'$xxx)", fd_lookup, dict) ===f "$xxx");
+    }
+
     //it "accepts an escaped )"
     //{
     //  expect(fdol_expand("$(nada||'su\\)rf)", fd_lookup, dict) ===f "su)rf");
