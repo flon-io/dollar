@@ -69,9 +69,16 @@ context "dollar"
       expect(fdol_expand("<$(blue)>", fd_lookup, dict) ===f "<>");
     }
 
-    it "understands ||"
+    context "pipes"
     {
-      expect(fdol_expand("$(blue||brown)", fd_lookup, dict) ===f "fox");
+      it "understands ||"
+      {
+        expect(fdol_expand("$(blue||brown)", fd_lookup, dict) ===f "fox");
+      }
+      it "understands |r"
+      {
+        expect(fdol_expand("$(brown|r)", fd_lookup, dict) ===f "xof");
+      }
     }
   }
 }

@@ -37,9 +37,12 @@
 
 
 static fabr_parser *fdol_parser = NULL;
+static fabr_parser *fdol_pipe_parser = NULL;
 
 static void fdol_parser_init()
 {
+  // parser
+
   fabr_parser *dol =
     fabr_n_seq(
       "d", fabr_string("$("), fabr_n("p"), fabr_string(")"), NULL);
@@ -68,43 +71,79 @@ static void fdol_parser_init()
       "r", fabr_alt(dol, outerstr, NULL), 0, -1);
 
   // TODO: give possibility to escape )
+
+  // pipe parser
+
+  fabr_parser *not_pipe = fabr_n_rex("s", "[^|]+");
+  fabr_parser *pipe = fabr_n_rex("p", "\\|\\|?");
+
+  fdol_pipe_parser =
+    fabr_seq(not_pipe, fabr_seq(pipe, not_pipe, fabr_r("*")), NULL);
 }
 
 
 //
 // fdol_expand()
 
+static char *fun_reverse(char *func, char *s)
+{
+  size_t l = strlen(s);
+  char *r = calloc(l + 1, sizeof(char));
+
+  for (ssize_t i = l - 1, j = 0; i > -1; ) r[j++] = s[i--];
+
+  return r;
+}
+
 static char *call(char *s, char *func)
 {
   //printf("call() >%s< on >%s<\n", func, s);
-  return flu_sprintf("%s(%s)", func, s);
+  if (s == NULL) return NULL;
+  if (*func == 'r') return fun_reverse(func, s);
+  return strdup(s);
 }
 
-static char *eval(char *s, fdol_lookup *func, void *data)
+static char *eval(const char *s, fdol_lookup *func, void *data)
 {
-  char mode = 'd'; // data vs 'f' functions
-  char *r = NULL;
+  fabr_tree *t = fabr_parse_all(s, 0, fdol_pipe_parser);
 
-  flu_list *l = flu_split(s, "|");
+  if (t == NULL) return strdup(s);
 
-  for (flu_node *n = l->first; n != NULL; n = n->next)
+  //puts(fabr_tree_to_string(t, s, 1));
+
+  char *ss = fabr_tree_string(s, t->child);
+  char *r = func(ss, data);
+  free(ss);
+
+  if (t->child->sibling->child)
   {
-    char *ss = (char *)n->item;
-    //printf(". >%s<\n", ss);
+    char mode = 'l'; // 'l'ookup vs 'c'all
 
-    if (mode == 'd')
+    for (fabr_tree *c = t->child->sibling->child->child; c; c = c->sibling)
     {
-      if (r == NULL) r = func(ss, data);
-    }
-    else // mode == 'f'
-    {
-      r = call(r, ss);
+      if (*c->name == 'p') { mode = c->length == 1 ? 'c' : 'l'; continue; }
+
+      ss = fabr_tree_string(s, c);
+
+      //printf("mode '%c' ss >%s<\n", mode, ss);
+
+      if (mode == 'l')
+      {
+        if (r == NULL) r = func(ss, data);
+      }
+      else // (mode == 'c')
+      {
+        char *or = r;
+        r = call(r, ss);
+        if (or) free(or);
+      }
+
+      free(ss);
     }
   }
 
-  flu_list_free_all(l);
+  fabr_tree_free(t);
 
-  if (r == NULL) r = strdup("");
   return r;
 }
 
@@ -129,10 +168,7 @@ static char *expand(const char *s, fabr_tree *t, fdol_lookup *func, void *data)
   for (fabr_tree *c = t->child; c != NULL; c = c->sibling)
   {
     fabr_tree *cc = c->child;
-    //puts("-");
-    //puts(fabr_tree_to_string(cc, s, 1));
     char *r = expand(s, cc, func, data);
-    //printf("r: >%s<\n", r);
     if (r) { flu_sbputs(b, r); free(r); }
   }
 
@@ -153,7 +189,6 @@ char *fdol_expand(const char *s, fdol_lookup *func, void *data)
   //fabr_tree_free(tt);
 
   fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
-  //puts(fabr_tree_to_string(t, s, 1)); puts("---");
   char *r = expand(s, t, func, data);
   fabr_tree_free(t);
 
