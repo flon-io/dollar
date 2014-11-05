@@ -106,13 +106,42 @@ static char *fun_case(int (* f)(int), char *s)
   return r;
 }
 
-static char *call(char *s, char *func)
+static char *fun_range(char *func, char *s)
 {
-  //printf("call() >%s< on >%s<\n", func, s);
+  char *r = NULL;
+  size_t l = strlen(s);
+  char *dots = strstr(func, "..");
+  if (dots)
+  {
+    long long a = strtoll(func, NULL, 10);
+    long long b = strtoll(dots + 2, NULL, 10);
+    while (a < 0) a = l + a;
+    while (b < 0) b = l + b;
+    size_t n = 0; if (b > a) n = b + 1 - a;
+    r = strndup(s + a, n);
+  }
+  else
+  {
+    long long i = strtoll(func, NULL, 10);
+    while (i < 0) i = l + i;
+    r = strndup(s + i, 1);
+  }
+
+  return r;
+}
+
+static char *call(char *s, char *f)
+{
+  //printf("call() >%s< on >%s<\n", f, s);
+
   if (s == NULL) return NULL;
-  if (*func == 'r') return fun_reverse(s);
-  if (*func == 'u') return fun_case(toupper, s);
-  if (*func == 'd') return fun_case(tolower, s);
+
+  if (*f == 'r') return fun_reverse(s);
+  if (*f == 'u') return fun_case(toupper, s);
+  if (*f == 'd') return fun_case(tolower, s);
+
+  if (*f == '-' || (*f >= '0' && *f <= '9')) return fun_range(f, s);
+
   return strdup(s);
 }
 
@@ -122,7 +151,7 @@ static char *eval(const char *s, fdol_lookup *func, void *data)
 
   if (t == NULL) return strdup(s);
 
-  puts(fabr_tree_to_string(t, s, 1));
+  //puts(fabr_tree_to_string(t, s, 1));
 
   char *ss = fabr_tree_string(s, t->child);
   char *r = func(ss, data);
@@ -134,8 +163,6 @@ static char *eval(const char *s, fdol_lookup *func, void *data)
 
     for (fabr_tree *c = t->child->sibling->child; c; c = c->sibling)
     {
-      puts("--"); puts(fabr_tree_to_string(c, s, 1));
-
       mode = (c->child->length) == 1 ? 'c' : 'l';
       ss = fabr_tree_string(s, c->child->sibling);
       //printf("mode '%c' ss >%s<\n", mode, ss);

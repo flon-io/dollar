@@ -92,6 +92,18 @@ context "dollar"
       {
         expect(fdol_expand("$(black|d)", fd_lookup, dict) ===f "pug");
       }
+      it "understands |1..-1"
+      {
+        expect(fdol_expand("$(quick|1..-1)", fd_lookup, dict) ===f "ump");
+      }
+      it "understands |2"
+      {
+        expect(fdol_expand("$(quick|2)", fd_lookup, dict) ===f "m");
+      }
+      it "understands |-3"
+      {
+        expect(fdol_expand("$(quick|-3)", fd_lookup, dict) ===f "u");
+      }
     }
   }
 }
