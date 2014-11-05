@@ -107,6 +107,24 @@ static char *fun_case(int (* f)(int), char *s)
   return r;
 }
 
+static char *fun_capitalize(char *s)
+{
+  char *r = calloc(strlen(s) + 1, sizeof(char));
+  short docap = 1;
+
+  for (size_t i = 0; s[i] != '\0'; ++i)
+  {
+    char c = s[i];
+
+    if (strchr(" \t\r\n", c)) { docap = 1; }
+    else { if (docap) { c = toupper(c); docap = 0; } }
+
+    r[i] = c;
+  }
+
+  return r;
+}
+
 static char *fun_range(char *func, char *s)
 {
   char *r = NULL;
@@ -172,6 +190,7 @@ static char *call(char *s, char *f)
   if (*f == 'r') return fun_reverse(s);
   if (*f == 'u') return fun_case(toupper, s);
   if (*f == 'd') return fun_case(tolower, s);
+  if (*f == 'c') return fun_capitalize(s);
   if (*f == 'l') return fun_length_filter(f, s);
 
   if (*f == '-' || (*f >= '0' && *f <= '9')) return fun_range(f, s);
