@@ -14,6 +14,7 @@ context "dollar"
 {
   char *fd_lookup(const char *path, void *data)
   {
+    //printf("      lookup: >%s<\n", path);
     char *r = flu_list_get(data, path);
     return r ? rdz_strdup(r) : NULL;
   }

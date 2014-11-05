@@ -74,6 +74,40 @@ static void fdol_parser_init()
 //
 // fdol_expand()
 
+static char *call(char *s, char *func)
+{
+  //printf("call() >%s< on >%s<\n", func, s);
+  return flu_sprintf("%s(%s)", func, s);
+}
+
+static char *eval(char *s, fdol_lookup *func, void *data)
+{
+  char mode = 'd'; // data vs 'f' functions
+  char *r = NULL;
+
+  flu_list *l = flu_split(s, "|");
+
+  for (flu_node *n = l->first; n != NULL; n = n->next)
+  {
+    char *ss = (char *)n->item;
+    //printf(". >%s<\n", ss);
+
+    if (mode == 'd')
+    {
+      if (r == NULL) r = func(ss, data);
+    }
+    else // mode == 'f'
+    {
+      r = call(r, ss);
+    }
+  }
+
+  flu_list_free_all(l);
+
+  if (r == NULL) r = strdup("");
+  return r;
+}
+
 static char *expand(const char *s, fabr_tree *t, fdol_lookup *func, void *data)
 {
   //puts(fabr_tree_to_string(t, s, 1));
@@ -83,9 +117,8 @@ static char *expand(const char *s, fabr_tree *t, fdol_lookup *func, void *data)
   if (*t->name == 'd')
   {
     char *d = expand(s, t->child->sibling, func, data);
-    char *dd = func(d, data);
+    char *dd = eval(d, func, data);
     free(d);
-    //printf("d >%s<\n", dd);
     return dd;
   }
 
