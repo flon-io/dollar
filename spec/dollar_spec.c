@@ -30,6 +30,7 @@ context "dollar"
       "black", "PuG",
       "func", "u",
       "ba", "black adder",
+      "bs", "bLACK shEEp",
       NULL);
   }
   after each
@@ -145,6 +146,7 @@ context "dollar"
       it "understands |c (capitalize)"
       {
         expect(fdol_expand("$(ba|c)", fd_lookup, dict) ===f "Black Adder");
+        expect(fdol_expand("$(bs|c)", fd_lookup, dict) ===f "Black Sheep");
       }
 
       it "understands |s/xx/yy/ (substitution filter)"

@@ -109,17 +109,13 @@ static char *fun_case(int (* f)(int), char *s)
 
 static char *fun_capitalize(char *s)
 {
-  char *r = calloc(strlen(s) + 1, sizeof(char));
+  char *r = fun_case(tolower, s);
   short docap = 1;
 
-  for (size_t i = 0; s[i] != '\0'; ++i)
+  for (char *rr = r; *rr != 0; rr++)
   {
-    char c = s[i];
-
-    if (strchr(" \t\r\n", c)) { docap = 1; }
-    else { if (docap) { c = toupper(c); docap = 0; } }
-
-    r[i] = c;
+    if (strchr(" \t\r\n.", *rr)) { docap = 1; }
+    else { if (docap) { *rr = toupper(*rr); docap = 0; } }
   }
 
   return r;
