@@ -14,14 +14,19 @@ context "dollar"
 {
   char *fd_lookup(const char *path, void *data)
   {
-    //flu_dict *d = (flu_dict *)data;
-    return (char *)flu_list_get(data, path);
+    char *r = flu_list_get(data, path);
+    return r ? strdup(r) : NULL;
   }
 
   before each
   {
     flu_dict *dict = flu_d(
-      "brown", "fox", "lazy", "dog", "quick", "jump", NULL);
+      "brown", "fox",
+      "lazy", "dog",
+      "quick", "jump",
+      "l", "la",
+      "z", "zy",
+      NULL);
   }
   after each
   {
@@ -41,9 +46,21 @@ context "dollar"
       free(s1);
     }
 
-    it "expands $(red)"
+    it "expands \"$(brown)\""
     {
-      expect(fdol_expand(".$(red).", fd_lookup, dict) ===f ".fox.");
+      expect(fdol_expand("$(brown)", fd_lookup, dict) ===f "fox");
+    }
+    it "expands \".$(brown).\""
+    {
+      expect(fdol_expand(".$(brown).", fd_lookup, dict) ===f ".fox.");
+    }
+    it "expands \"$(brown) $(lazy)\""
+    {
+      expect(fdol_expand("$(brown) $(lazy)", fd_lookup, dict) ===f "fox dog");
+    }
+    it "expands \"$($(l)$(z))\""
+    {
+      expect(fdol_expand("$($(l)$(z))", fd_lookup, dict) ===f "dog");
     }
   }
 }

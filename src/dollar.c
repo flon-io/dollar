@@ -41,10 +41,10 @@ static void fdol_parser_init()
 {
   fabr_parser *dol =
     fabr_n_seq(
-      "dol", fabr_string("$("), fabr_n("span"), fabr_string(")"), NULL);
+      "d", fabr_string("$("), fabr_n("p"), fabr_string(")"), NULL);
   fabr_parser *str =
     fabr_n_rex(
-      "str",
+      "s",
       "("
         "[^\\$\\)]" "|"
         "\\$[^\\(]"
@@ -52,24 +52,59 @@ static void fdol_parser_init()
 
   //fabr_parser *span =
     fabr_n_rep(
-      "span", fabr_alt(dol, str, NULL), 0, -1);
+      "p", fabr_alt(dol, str, NULL), 0, -1);
 
   fabr_parser *outerstr =
     fabr_n_rex(
-      "str",
+      "s",
       "("
         "[^\\$]" "|" // doesn't mind ")"
         "\\$[^\\(]"
       ")+");
 
   fdol_parser =
-    fabr_rep(
-      fabr_alt(dol, outerstr, NULL), 0, -1);
+    fabr_n_rep(
+      "r", fabr_alt(dol, outerstr, NULL), 0, -1);
+
+  // TODO: give possibility to escape )
 }
 
 
 //
 // fdol_expand()
+
+static char *expand(const char *s, fabr_tree *t, fdol_lookup *func, void *data)
+{
+  //puts(fabr_tree_to_string(t, s, 1));
+
+  if (*t->name == 's') return fabr_tree_string(s, t);
+
+  if (*t->name == 'd')
+  {
+    char *d = expand(s, t->child->sibling, func, data);
+    char *dd = func(d, data);
+    free(d);
+    //printf("d >%s<\n", dd);
+    return dd;
+  }
+
+  // 'r' or 'p'
+
+  flu_sbuffer *b = flu_sbuffer_malloc();
+
+  for (fabr_tree *c = t->child; c != NULL; c = c->sibling)
+  {
+    fabr_tree *cc = c->child;
+    //puts("-");
+    //puts(fabr_tree_to_string(cc, s, 1));
+    char *r = expand(s, cc, func, data);
+    //printf("r: >%s<\n", r);
+    flu_sbputs(b, r);
+    free(r);
+  }
+
+  return flu_sbuffer_to_string(b);
+}
 
 char *fdol_expand(const char *s, fdol_lookup *func, void *data)
 {
@@ -77,12 +112,18 @@ char *fdol_expand(const char *s, fdol_lookup *func, void *data)
 
   if (fdol_parser == NULL) fdol_parser_init();
 
-  printf("s >%s<\n", s);
-  //fabr_tree *tt = fabr_parse_f(s, 0, fdol_parser, FABR_F_ALL);
-  //fabr_tree *tt = fabr_parse_f(s, 0, fdol_parser, FABR_F_PRUNE | FABR_F_ALL);
-  fabr_tree *tt = fabr_parse_all(s, 0, fdol_parser);
-  puts(fabr_tree_to_string(tt, s, 1));
+  //printf("s >%s<\n", s);
+  ////fabr_tree *tt = fabr_parse_f(s, 0, fdol_parser, FABR_F_ALL);
+  ////fabr_tree *tt = fabr_parse_f(s, 0, fdol_parser, FABR_F_PRUNE | FABR_F_ALL);
+  //fabr_tree *tt = fabr_parse_all(s, 0, fdol_parser);
+  //puts(fabr_tree_to_string(tt, s, 1));
+  //fabr_tree_free(tt);
 
-  return strdup(s);
+  fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
+  //puts(fabr_tree_to_string(t, s, 1)); puts("---");
+  char *r = expand(s, t, func, data);
+  fabr_tree_free(t);
+
+  return r;
 }
 
