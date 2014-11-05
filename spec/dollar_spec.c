@@ -15,7 +15,7 @@ context "dollar"
   char *fd_lookup(const char *path, void *data)
   {
     char *r = flu_list_get(data, path);
-    return r ? strdup(r) : NULL;
+    return r ? rdz_strdup(r) : NULL;
   }
 
   before each
