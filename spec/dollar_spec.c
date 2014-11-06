@@ -169,6 +169,8 @@ context "dollar"
 
         expect(fdol_expand("$(lazy|l!=4||'none)", fd_lookup, dict) ===f "dog");
         expect(fdol_expand("$(lazy|l!=3||'none)", fd_lookup, dict) ===f "none");
+        expect(fdol_expand("$(lazy|l<>4||'none)", fd_lookup, dict) ===f "dog");
+        expect(fdol_expand("$(lazy|l<>3||'none)", fd_lookup, dict) ===f "none");
       }
 
       it "understands |m/xx/ (match filter)"

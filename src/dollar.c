@@ -148,7 +148,7 @@ static char *fun_range(char *func, char *s)
 static char *fun_length_filter(char *f, char *s)
 {
   size_t sl = strlen(s);
-  size_t off = 2; if (f[2] == '=') off = 3;
+  size_t off = 2; if (f[2] == '=' || f[2] == '>') off = 3;
   size_t l = strtoll(f + off, NULL, 10);
 
   //printf("flf() f \"%s\" s \"%s\" (%zu)\n", f, s, sl);
@@ -159,7 +159,7 @@ static char *fun_length_filter(char *f, char *s)
   {
     t = (sl == l);
   }
-  else if (f[1] == '!')
+  else if (f[1] == '!' || (f[1] == '<' && f[2] == '>'))
   {
     t = (sl != l);
   }
