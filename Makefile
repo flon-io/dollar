@@ -10,7 +10,7 @@ default: $(NAME).o
 #
 upgrade:
 	cp -v ../aabro/src/*.[ch] src/
-	cp -v ../flutil/src/*.[ch] src/
+	cp -v ../flutil/src/flutil.[ch] src/
 
 cs: clean spec
 
