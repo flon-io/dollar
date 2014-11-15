@@ -650,11 +650,11 @@ static flu_node *flu_list_getn(flu_list *l, const char *key)
   return NULL;
 }
 
-void *flu_list_get(flu_list *l, const char *key)
+void *flu_list_getd(flu_list *l, const char *key, void *def)
 {
   flu_node *n = flu_list_getn(l, key);
 
-  return n == NULL ? NULL : n->item;
+  return n ? n->item : def;
 }
 
 flu_list *flu_list_dtrim(flu_list *l)
@@ -692,7 +692,46 @@ flu_list *flu_d(char *k0, void *v0, ...)
   flu_list *d = flu_vd(ap);
   va_end(ap);
 
+  if (d) flu_list_set(d, k0, v0);
+
+  return d;
+}
+
+flu_list *flu_vsd(va_list ap)
+{
+  flu_list *d = flu_list_malloc();
+
+  while (1)
+  {
+    char *kf = va_arg(ap, char *);
+    if (kf == NULL) break;
+    char *k = flu_svprintf(kf, ap);
+
+    char *vf = va_arg(ap, char *);
+    char *v = vf ? flu_svprintf(vf, ap) : NULL;
+
+    flu_list_set(d, k, v);
+
+    free(k);
+  }
+
+  return d;
+}
+
+flu_list *flu_sd(char *kf0, ...)
+{
+  va_list ap; va_start(ap, kf0);
+
+  char *k0 = flu_svprintf(kf0, ap);
+
+  char *vf0 = va_arg(ap, char *);
+  char *v0 = vf0 ? flu_svprintf(vf0, ap) : NULL;
+
+  flu_list *d = flu_vsd(ap);
+  va_end(ap);
+
   flu_list_set(d, k0, v0);
+  free(k0);
 
   return d;
 }
@@ -875,6 +914,14 @@ long long flu_stoll(char *s, size_t l, int base)
   long long r = strtoll(ss, NULL, base);
   free(ss);
   //printf("flu_stoll() >%s< in >%s< --> %li\n", s, strndup(s, l), r);
+
+  return r;
+}
+
+int flu_putf(char *s)
+{
+  int r = puts(s);
+  free(s);
 
   return r;
 }

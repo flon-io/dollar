@@ -284,10 +284,14 @@ void flu_list_set(flu_list *l, const char *key, void *item);
  */
 void flu_list_set_last(flu_list *l, const char *key, void *item);
 
+/* Like flu_list_get() but a default is specified.
+ */
+void *flu_list_getd(flu_list *l, const char *key, void *def);
+
 /* Given a key, returns the item bound for it, NULL instead.
  * (O(n)).
  */
-void *flu_list_get(flu_list *l, const char *key);
+#define flu_list_get(l, key) flu_list_getd(l, key, NULL)
 
 /* Returns a trimmed (a unique value per key) version of the given flu_list
  * dictionary. Meant for iterating over key/values.
@@ -304,6 +308,16 @@ flu_list *flu_vd(va_list ap);
  * it has made a dict of all the memory from v0...
  */
 flu_list *flu_d(char *k0, void *v0, ...);
+
+/* Used behind the scenes by flu_sd(). Composes a flu_list dict from the
+ * given va_list. Allows formatted keys and values.
+ */
+flu_list *flu_vsd(va_list ap);
+
+/* Like flu_d() but allows keys and values to be formatted (printf-style).
+ * Values must be strings. Disposed via flu_list_free_all().
+ */
+flu_list *flu_sd(char *k0, ...);
 
 
 //
@@ -378,6 +392,10 @@ int flu_system(const char *format, ...);
  * Returns 0 when in doubt.
  */
 long long flu_stoll(char *s, size_t l, int base);
+
+/* Calls puts() with its argument, then frees it. Returns puts() result.
+ */
+int flu_putf(char *s);
 
 #endif // FLON_FLUTIL_H
 
