@@ -24,6 +24,7 @@ context "dollar"
       "func", "u",
       "ba", "black adder",
       "bs", "bLACK shEEp",
+      "msg", "\"hello world\"",
       NULL);
   }
   after each
@@ -140,6 +141,24 @@ context "dollar"
       {
         expect(fdol_expand("$(ba|c)", d, fdol_dlup) ===f "Black Adder");
         expect(fdol_expand("$(bs|c)", d, fdol_dlup) ===f "Black Sheep");
+      }
+
+      it "understands |q ([double] quote)"
+      {
+        expect(fdol_expand("the $(ba|c|q)", d, fdol_dlup) ===f ""
+          "the \"Black Adder\"");
+        expect(fdol_expand("the $(bs|c|q)", d, fdol_dlup) ===f ""
+          "the \"Black Sheep\"");
+      }
+      it "doesn't double quote when |q"
+      {
+        expect(fdol_expand("$(msg|q)", d, fdol_dlup) ===f ""
+          "\"hello world\"");
+      }
+      it "double quotes when |Q"
+      {
+        expect(fdol_expand("$(msg|Q)", d, fdol_dlup) ===f ""
+          "\"\"hello world\"\"");
       }
 
       it "understands |s/xx/yy/ (substitution filter)"

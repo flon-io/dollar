@@ -177,6 +177,19 @@ static char *fun_length_filter(char *f, char *s)
   return t ? s : NULL;
 }
 
+static char *fun_quote(char *f, char *s)
+{
+  size_t l = strlen(s);
+
+  if (*f == 'q' && s[0] == '"' && s[l - 1] == '"') return s;
+
+  char *r = calloc(l + 3, sizeof(char));
+
+  r[0] = '"'; strcpy(r + 1, s); r[l + 1] = '"';
+
+  return r;
+}
+
 static char *call(char *s, char *f)
 {
   //printf("call() >%s< on >%s<\n", f, s);
@@ -188,6 +201,8 @@ static char *call(char *s, char *f)
   if (*f == 'd') return fun_case(tolower, s);
   if (*f == 'c') return fun_capitalize(s);
   if (*f == 'l') return fun_length_filter(f, s);
+  if (*f == 'q') return fun_quote(f, s);
+  if (*f == 'Q') return fun_quote(f, s);
 
   if (*f == '-' || (*f >= '0' && *f <= '9')) return fun_range(f, s);
 
@@ -312,8 +327,8 @@ char *fdol_quote_expand(const char *s, void *data, fdol_lookup *func)
 
   if (fdol_parser == NULL) fdol_parser_init();
 
-  fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
-  puts(fabr_tree_to_string(t, s, 1));
+  //fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
+  //puts(fabr_tree_to_string(t, s, 1));
 
   return NULL;
 }
