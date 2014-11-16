@@ -306,6 +306,18 @@ char *fdol_expand(const char *s, void *data, fdol_lookup *func)
   return r;
 }
 
+char *fdol_quote_expand(const char *s, void *data, fdol_lookup *func)
+{
+  if (strchr(s, '$') == NULL) return strdup(s);
+
+  if (fdol_parser == NULL) fdol_parser_init();
+
+  fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
+  puts(fabr_tree_to_string(t, s, 1));
+
+  return NULL;
+}
+
 char *fdol_dlup(void *data, const char *path)
 {
   char *r = flu_list_get(data, path);

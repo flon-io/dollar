@@ -177,5 +177,20 @@ context "dollar"
       }
     }
   }
+
+  describe "fdol_quote_expand()"
+  {
+    it "expands and wraps in quote at the first level"
+    {
+      expect(fdol_quote_expand("quick $(brown)", d, fdol_dlup) ===f ""
+        "quick \"fox\"");
+    }
+
+    it "expands into empty quotes"
+    {
+      expect(fdol_quote_expand("quick $(nada)", d, fdol_dlup) ===f ""
+        "quick \"\"");
+    }
+  }
 }
 
