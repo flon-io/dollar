@@ -210,6 +210,12 @@ context "dollar"
       expect(fdol_quote_expand("quick $(nada)", d, fdol_dlup) ===f ""
         "quick \"\"");
     }
+
+    it "only expands at the first level"
+    {
+      expect(fdol_quote_expand("the $($(l)$(z))", d, fdol_dlup) ===f ""
+        "the \"dog\"");
+    }
   }
 }
 

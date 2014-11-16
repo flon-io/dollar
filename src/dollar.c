@@ -267,7 +267,8 @@ static char *unescape(char *s)
   return r;
 }
 
-static char *expand(const char *s, fabr_tree *t, void *data, fdol_lookup *func)
+static char *expand(
+  const char *s, fabr_tree *t, int quote, void *data, fdol_lookup *func)
 {
   //puts(fabr_tree_to_string(t, s, 1));
 
@@ -278,9 +279,11 @@ static char *expand(const char *s, fabr_tree *t, void *data, fdol_lookup *func)
 
   if (*t->name == 'd')
   {
-    char *d = expand(s, t->child->sibling, data, func);
+    char *d = expand(s, t->child->sibling, 0, data, func);
     char *dd = eval(d, data, func);
     free(d);
+    if (quote && dd == NULL) return strdup("\"\"");
+    if (quote) { d = fun_quote("q", dd); free(dd); return d; }
     return dd;
   }
 
@@ -291,46 +294,35 @@ static char *expand(const char *s, fabr_tree *t, void *data, fdol_lookup *func)
   for (fabr_tree *c = t->child; c != NULL; c = c->sibling)
   {
     fabr_tree *cc = c->child;
-    char *r = expand(s, cc, data, func);
+    char *r = expand(s, cc, quote, data, func);
     if (r) { flu_sbputs(b, r); free(r); }
   }
 
   return flu_sbuffer_to_string(b);
 }
 
-char *fdol_expand(const char *s, void *data, fdol_lookup *func)
+static char *do_expand(const char *s, int quote, void *data, fdol_lookup *func)
 {
   if (strchr(s, '$') == NULL) return strdup(s);
 
   if (fdol_parser == NULL) fdol_parser_init();
 
-  //printf("s >%s<\n", s);
-  ////fabr_tree *tt =
-  ////  fabr_parse_f(s, 0, fdol_parser, FABR_F_ALL);
-  ////fabr_tree *tt =
-  ////  fabr_parse_f(s, 0, fdol_parser, FABR_F_PRUNE | FABR_F_ALL);
-  //fabr_tree *tt = fabr_parse_all(s, 0, fdol_parser);
-  //puts(fabr_tree_to_string(tt, s, 1));
-  //fabr_tree_free(tt);
-
   fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
   //puts(fabr_tree_to_string(t, s, 1));
-  char *r = expand(s, t, data, func);
+  char *r = expand(s, t, quote, data, func);
   fabr_tree_free(t);
 
   return r;
 }
 
+char *fdol_expand(const char *s, void *data, fdol_lookup *func)
+{
+  return do_expand(s, 0, data, func);
+}
+
 char *fdol_quote_expand(const char *s, void *data, fdol_lookup *func)
 {
-  if (strchr(s, '$') == NULL) return strdup(s);
-
-  if (fdol_parser == NULL) fdol_parser_init();
-
-  //fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
-  //puts(fabr_tree_to_string(t, s, 1));
-
-  return NULL;
+  return do_expand(s, 1, data, func);
 }
 
 char *fdol_dlup(void *data, const char *path)
