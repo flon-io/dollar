@@ -25,6 +25,7 @@ context "dollar"
       "ba", "black adder",
       "bs", "bLACK shEEp",
       "msg", "\"hello world\"",
+      "msg1", "hello \"le monde\"",
       NULL);
   }
   after each
@@ -158,7 +159,12 @@ context "dollar"
       it "double quotes when |Q"
       {
         expect(fdol_expand("$(msg|Q)", d, fdol_dlup) ===f ""
-          "\"\"hello world\"\"");
+          "\"\\\"hello world\\\"\"");
+      }
+      it "escapes when |q"
+      {
+        expect(fdol_expand("$(msg1|q)", d, fdol_dlup) ===f ""
+          "\"hello \\\"le monde\\\"\"");
       }
 
       it "understands |s/xx/yy/ (substitution filter)"
@@ -203,6 +209,12 @@ context "dollar"
     {
       expect(fdol_quote_expand("quick $(brown)", d, fdol_dlup) ===f ""
         "quick \"fox\"");
+    }
+
+    it "expands and escapes"
+    {
+      expect(fdol_quote_expand("$(msg1)", d, fdol_dlup) ===f ""
+        "\"hello \\\"le monde\\\"\"");
     }
 
     it "expands into empty quotes"

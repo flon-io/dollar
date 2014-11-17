@@ -179,13 +179,13 @@ static char *fun_length_filter(char *f, char *s)
 
 static char *fun_quote(char *f, char *s)
 {
-  size_t l = strlen(s);
+  if (*f == 'q' && s[0] == '"' && s[strlen(s) - 1] == '"') return s;
 
-  if (*f == 'q' && s[0] == '"' && s[l - 1] == '"') return s;
-
+  char *ss = flu_escape(s);
+  size_t l = strlen(ss);
   char *r = calloc(l + 3, sizeof(char));
-
-  r[0] = '"'; strcpy(r + 1, s); r[l + 1] = '"';
+  r[0] = '"'; strcpy(r + 1, ss); r[l + 1] = '"';
+  free(ss);
 
   return r;
 }
@@ -201,8 +201,7 @@ static char *call(char *s, char *f)
   if (*f == 'd') return fun_case(tolower, s);
   if (*f == 'c') return fun_capitalize(s);
   if (*f == 'l') return fun_length_filter(f, s);
-  if (*f == 'q') return fun_quote(f, s);
-  if (*f == 'Q') return fun_quote(f, s);
+  if (tolower(*f) == 'q') return fun_quote(f, s);
 
   if (*f == '-' || (*f >= '0' && *f <= '9')) return fun_range(f, s);
 
