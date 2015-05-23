@@ -30,41 +30,21 @@
 
 #include "flutil.h"
 
-//
-// fabr_parser
 
-typedef struct fabr_parser {
-  char *id;
-  char *name;
-  short type;
-  char *string;
-  ssize_t min; ssize_t max;
-  struct fabr_parser **children;
-} fabr_parser;
 
-/* Frees the given parser (and its children parsers).
- */
-void fabr_parser_free(fabr_parser *p);
-
-/* Returns a string representation of the parser (and its children).
- */
-char *fabr_parser_to_string(fabr_parser *p);
-
-/* Returns a string representation of the parser
- * (but doesn't dive into its children).
- */
-char *fabr_parser_to_s(fabr_parser *p);
+#define FABR_VERSION "2.0.0"
 
 //
 // fabr_tree
 
 typedef struct fabr_tree {
   char *name;
-  short result; // -1 error, 0 failure, 1 success
+  short result; // -1 error, 0 nomatch, 1 success
   size_t offset;
   size_t length;
   char *note; // set in case of error
-  fabr_parser *parser;
+  char *parter; // "str-01" for example
+  size_t rexlen;
   struct fabr_tree *sibling;
   struct fabr_tree *child;
 } fabr_tree;
@@ -94,83 +74,6 @@ char *fabr_tree_string(const char *input, fabr_tree *t);
  * Returns the pointer even if the tree is not a successful one.
  */
 char *fabr_tree_str(char *input, fabr_tree *t);
-
-//
-// fabr_parser builders
-//
-// Calling those methods build parsers.
-//
-// The ellipsis methods (alt, seq) actually expect NULL as their
-// last argument to stop iterating (over their arguments).
-
-fabr_parser *fabr_string(const char *s);
-fabr_parser *fabr_range(const char *range);
-fabr_parser *fabr_rex(const char *s);
-
-fabr_parser *fabr_rep(fabr_parser *p, ssize_t min, ssize_t max);
-fabr_parser *fabr_alt(fabr_parser *p, ...);
-fabr_parser *fabr_altg(fabr_parser *p, ...);
-fabr_parser *fabr_seq(fabr_parser *p, ...);
-
-fabr_parser *fabr_n_alt(const char *name, fabr_parser *p, ...);
-fabr_parser *fabr_n_altg(const char *name, fabr_parser *p, ...);
-fabr_parser *fabr_n_range(const char *name, const char *range);
-fabr_parser *fabr_n_rex(const char *name, const char *s);
-
-fabr_parser *fabr_n_rep(const char *name, fabr_parser *p, ssize_t min, ssize_t max);
-fabr_parser *fabr_n_seq(const char *name, fabr_parser *p, ...);
-fabr_parser *fabr_n_string(const char *name, const char *s);
-
-fabr_parser *fabr_name(const char *name, fabr_parser *p);
-
-fabr_parser *fabr_n(const char *name);
-
-fabr_parser *fabr_r(const char *code);
-fabr_parser *fabr_n_r(const char *name, const char *code);
-fabr_parser *fabr_q(const char *code);
-fabr_parser *fabr_n_q(const char *name, const char *code);
-
-//fabr_parser *fabr_not(fabr_parser *p);
-//fabr_parser *fabr_presence(fabr_parser *p);
-//fabr_parser *fabr_absence(fabr_parser *p);
-
-#define fabr_str(s) fabr_string(s)
-
-//
-// entry point
-
-/* Parses the input. returns a fabr_tree with result 0 if not all the
- * input could be parsed until its end.
- */
-fabr_tree *fabr_parse_all(
-  const char *input, size_t offset, fabr_parser *p);
-
-/* Parses as much as it can from the given input (starting at offset).
- * The length of the resulting fabr_tree can be shorter than the length
- * of the input.
- */
-fabr_tree *fabr_parse(
-  const char *input, size_t offset, fabr_parser *p);
-
-enum // flags for fabr_parse_f
-{
-  FABR_F_PRUNE  = 1 << 0, // don't prune failed trees, defaults to true
-  FABR_F_ALL    = 1 << 1, // parse all, defaults to false
-  FABR_F_MATCH  = 1 << 2  // prune everything, leave only root and result
-};
-
-/* Parses with a given input, offset and a configuration struct.
- */
-fabr_tree *fabr_parse_f(
-  const char *input, size_t offset, fabr_parser *p, int flags);
-
-/* Simply responds 1: yes, the input was parsed successfully, 0: no, the
- * input was not parsed successfully.
- */
-int fabr_match(const char *input, fabr_parser *p);
-
-//
-// helper functions
 
 /* Given a fabr_tree resulting from a parse run, returns the error message
  * or NULL if none.
@@ -219,16 +122,76 @@ fabr_tree **fabr_tree_collect(fabr_tree *t, fabr_tree_func *f);
 
 /* Returns the child at the given index, or NULL if there is none there.
  */
-fabr_parser *fabr_p_child(fabr_parser *p, size_t index);
-
-/* Returns the child at the given index, or NULL if there is none there.
- */
 fabr_tree *fabr_t_child(fabr_tree *t, size_t index);
+
+/* fabr_t_path(t, 0, 1, -1); returns the second subtree of the first subtree
+ * of t.
+ */
+fabr_tree *fabr_t_path(fabr_tree *t, size_t index, ...);
+
+
+//
+// fabr_input
+
+typedef struct {
+  char *string;
+  size_t offset;
+  int flags;
+} fabr_input;
+
+
+//
+// parsers
+
+typedef fabr_tree *fabr_parser(fabr_input *);
+
+//
+// parters (partial parsers)
+
+fabr_tree *fabr_str(
+  char *name, fabr_input *i, char *str);
+
+fabr_tree *fabr_seq(
+  char *name, fabr_input *i, fabr_parser *p, ...);
+
+fabr_tree *fabr_alt(
+  char *name, fabr_input *i, fabr_parser *p, ...);
+
+fabr_tree *fabr_rep(
+  char *name, fabr_input *i, fabr_parser *p, size_t min, size_t max);
+
+fabr_tree *fabr_rng(
+  char *name, fabr_input *i, char *range);
+
+fabr_tree *fabr_rex(
+  char *name, fabr_input *i, char *rex);
+
+fabr_tree *fabr_jseq(
+  char *name, fabr_input *i, fabr_parser *eltp, fabr_parser *sepp);
+
+fabr_tree *fabr_all(
+  char *name, fabr_input *i, fabr_parser *p);
+
+
+//
+// helpers
+
+fabr_tree *fabr_parse(const char *input, fabr_parser *p);
+fabr_tree *fabr_parse_all(const char *input, fabr_parser *p);
+
+enum // flags for fabr_parse_f
+{
+  FABR_F_PRUNE  = 1 << 0, // don't prune failed trees, defaults to true
+  FABR_F_ALL    = 1 << 1, // parse all, defaults to false
+  FABR_F_MATCH  = 1 << 2  // prune everything, leave only root and result
+};
+
+fabr_tree *fabr_parse_f(const char *input, fabr_parser *p, int flags);
+
+/* Returns 1 if the all the input is matched by the parser.
+ * Returns 0 if the match fails, returns -1 in case of error.
+ */
+int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit 2e6b6c066af4c429f9cada525b26dfc93b3e98ae
-//Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Mon Jan 5 06:38:33 2015 +0900
-//
-//    2015
