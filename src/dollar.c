@@ -37,50 +37,65 @@
 #include "dollar.h"
 
 
-static fabr_parser *fdol_parser = NULL;
-static fabr_parser *fdol_pipe_parser = NULL;
-
-static void fdol_parser_init()
+static fabr_tree *_str(fabr_input *i)
 {
-  // parser
+  return fabr_rex("s", i,
+    "("
+      "\\\\\\)" "|"
+      "[^\\$\\)]" "|"
+      "\\$[^\\(]"
+    ")+");
+}
+static fabr_tree *_outerstr(fabr_input *i)
+{
+  return fabr_rex("s", i,
+    "("
+      "[^\\$]" "|" // doesn't mind ")"
+      "\\$[^\\(]"
+    ")+");
+}
+static fabr_tree *_dps(fabr_input *i) { return fabr_str(NULL, i, "$("); }
+static fabr_tree *_pe(fabr_input *i) { return fabr_str(NULL, i, ")"); }
 
-  fabr_parser *dol =
-    fabr_n_seq(
-      "d", fabr_string("$("), fabr_n("p"), fabr_string(")"), NULL);
-  fabr_parser *str =
-    fabr_n_rex(
-      "s",
-      "("
-        "\\\\\\)" "|"
-        "[^\\$\\)]" "|"
-        "\\$[^\\(]"
-      ")+");
+static fabr_tree *_span(fabr_input *i); // forward
 
-  //fabr_parser *span =
-    fabr_n_rep(
-      "p", fabr_alt(dol, str, NULL), 0, -1);
-
-  fabr_parser *outerstr =
-    fabr_n_rex(
-      "s",
-      "("
-        "[^\\$]" "|" // doesn't mind ")"
-        "\\$[^\\(]"
-      ")+");
-
-  fdol_parser =
-    fabr_n_rep(
-      "r", fabr_alt(dol, outerstr, NULL), 0, -1);
+static fabr_tree *_dollar(fabr_input *i)
+{
+  return fabr_seq("d", i, _dps, _span, _pe, NULL);
+}
+static fabr_tree *_dos(fabr_input *i)
+{
+  return fabr_alt(NULL, i, _dollar, _str, NULL);
+}
+static fabr_tree *_doo(fabr_input *i)
+{
+  return fabr_alt(NULL, i, _dollar, _outerstr, NULL);
+}
+static fabr_tree *_span(fabr_input *i)
+{
+  return fabr_rep("p", i, _dos, 0, 0); // 0 or more, *
+}
+static fabr_tree *_parser(fabr_input *i)
+{
+  return fabr_rep("r", i, _doo, 0, 0); // 0 or more, *
+}
 
   // TODO: give possibility to escape )
 
-  // pipe parser
+//  // pipe parser
+//
+//  fabr_parser *not_pipe = fabr_n_rex("s", "[^|]+");
+//  fabr_parser *pipe = fabr_n_rex("p", "\\|\\|?");
+//
+//  fdol_pipe_parser =
+//    fabr_seq(not_pipe, fabr_seq(pipe, not_pipe, fabr_r("*")), NULL);
+//}
 
-  fabr_parser *not_pipe = fabr_n_rex("s", "[^|]+");
-  fabr_parser *pipe = fabr_n_rex("p", "\\|\\|?");
-
-  fdol_pipe_parser =
-    fabr_seq(not_pipe, fabr_seq(pipe, not_pipe, fabr_r("*")), NULL);
+//  fdol_pipe_parser =
+//    fabr_seq(not_pipe, fabr_seq(pipe, not_pipe, fabr_r("*")), NULL);
+static fabr_tree *_pipe_parser(fabr_input *i)
+{
+  return NULL;
 }
 
 
@@ -210,7 +225,7 @@ static char *call(char *s, char *f)
 
 static char *eval(const char *s, void *data, fdol_lookup *func)
 {
-  fabr_tree *t = fabr_parse_all(s, 0, fdol_pipe_parser);
+  fabr_tree *t = fabr_parse_all(s, _pipe_parser);
 
   if (t == NULL) return strdup(s);
 
@@ -269,7 +284,7 @@ static char *unescape(char *s)
 static char *expand(
   const char *s, fabr_tree *t, int quote, void *data, fdol_lookup *func)
 {
-  //puts(fabr_tree_to_string(t, s, 1));
+  //fabr_puts_tree(t, s, 1);
 
   if (*t->name == 's')
   {
@@ -304,11 +319,9 @@ static char *do_expand(const char *s, int quote, void *data, fdol_lookup *func)
 {
   if (strchr(s, '$') == NULL) return strdup(s);
 
-  if (fdol_parser == NULL) fdol_parser_init();
-
-  fabr_tree *t = fabr_parse_all(s, 0, fdol_parser);
-  //puts(fabr_tree_to_string(t, s, 1));
-  char *r = expand(s, t, quote, data, func);
+  fabr_tree *t = fabr_parse_all(s, _parser);
+  fabr_puts_tree(t, s, 1);
+  char *r = expand(s, t->child, quote, data, func);
   fabr_tree_free(t);
 
   return r;

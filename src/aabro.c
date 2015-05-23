@@ -177,6 +177,11 @@ char *fabr_tree_to_string(fabr_tree *t, const char *input, short color)
   return flu_sbuffer_to_string(b);
 }
 
+void fabr_puts_tree(fabr_tree *t, const char *input, short color)
+{
+  char *s = fabr_tree_to_string(t, input, color); puts(s); free(s);
+}
+
 char *fabr_tree_to_str(fabr_tree *t, const char *input, short color)
 {
   flu_sbuffer *b = flu_sbuffer_malloc();
@@ -313,7 +318,7 @@ fabr_tree *fabr_t_path(fabr_tree *t, size_t index, ...)
 //
 // parters (partial parsers)
 
-static size_t mm = 0;
+//static size_t mm = 0;
 
 static fabr_tree *str(fabr_input *i, char *rx, size_t rxn)
 {
@@ -408,12 +413,17 @@ fabr_tree *fabr_rep(
     if (*(i->string + i->offset) == 0) break; // EOS
 
     fabr_tree *t = p(i);
+
+    if (t->result == 0)
+    {
+      if (i->flags & FABR_F_PRUNE) fabr_tree_free(t); else *next = t;
+      break;
+    }
+
     *next = t;
 
     if (t->result == -1) { r->result = -1; break; }
-    if (t->result == 0) break;
 
-    //i->offset += t->length;
     r->length += t->length;
 
     if (++count == max) break;
