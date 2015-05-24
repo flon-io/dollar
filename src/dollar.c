@@ -37,6 +37,8 @@
 #include "dollar.h"
 
 
+// dollar parser
+
 static fabr_tree *_str(fabr_input *i)
 {
   return fabr_rex("s", i,
@@ -75,6 +77,7 @@ static fabr_tree *_span(fabr_input *i)
 {
   return fabr_rep("p", i, _dos, 0, 0); // 0 or more, *
 }
+
 static fabr_tree *_parser(fabr_input *i)
 {
   return fabr_rep("r", i, _doo, 0, 0); // 0 or more, *
@@ -82,20 +85,24 @@ static fabr_tree *_parser(fabr_input *i)
 
   // TODO: give possibility to escape )
 
-//  // pipe parser
-//
-//  fabr_parser *not_pipe = fabr_n_rex("s", "[^|]+");
-//  fabr_parser *pipe = fabr_n_rex("p", "\\|\\|?");
-//
-//  fdol_pipe_parser =
-//    fabr_seq(not_pipe, fabr_seq(pipe, not_pipe, fabr_r("*")), NULL);
-//}
 
-//  fdol_pipe_parser =
-//    fabr_seq(not_pipe, fabr_seq(pipe, not_pipe, fabr_r("*")), NULL);
+// pipe parser
+
+static fabr_tree *_nopi(fabr_input *i) { return fabr_rex("s", i, "[^|]+"); }
+static fabr_tree *_pi(fabr_input *i) { return fabr_rex("p", i, "\\|\\|?"); }
+
+static fabr_tree *_pi_nopi(fabr_input *i)
+{
+  return fabr_seq(NULL, i, _pi, _nopi, NULL);
+}
+static fabr_tree *_pi_nopi_star(fabr_input *i)
+{
+  return fabr_rep(NULL, i, _pi_nopi, 0, 0);
+}
+
 static fabr_tree *_pipe_parser(fabr_input *i)
 {
-  return NULL;
+  return fabr_seq(NULL, i, _nopi, _pi_nopi_star, NULL);
 }
 
 
@@ -229,40 +236,39 @@ static char *eval(const char *s, void *data, fdol_lookup *func)
 
   if (t == NULL) return strdup(s);
 
-  //puts(fabr_tree_to_string(t, s, 1));
+  //fabr_puts_tree(t, s, 1);
 
   char *ss = fabr_tree_string(s, t->child);
   char *r = func(data, ss);
   free(ss);
 
-  if (t->child->sibling->child)
-  {
-    char mode = 'l'; // 'l'ookup vs 'c'all
+  //printf("r 0 >%s<\n", r);
+  //fabr_puts_tree(t->child->sibling->child, s, 1);
 
-    for (fabr_tree *c = t->child->sibling->child; c; c = c->sibling)
-    {
-      mode = (c->child->length) == 1 ? 'c' : 'l';
-      ss = fabr_tree_string(s, c->child->sibling);
-      //printf("mode '%c' ss >%s<\n", mode, ss);
-
-      if (mode == 'l')
-      {
-        if (r == NULL)
-        {
-          if (*ss == '\'') r = strdup(ss + 1);
-          else r = func(data, ss);
-        }
-      }
-      else // (mode == 'c')
-      {
-        char *or = r;
-        r = call(r, ss);
-        if (or != r) free(or);
-      }
-
-      free(ss);
-    }
-  }
+//  if (t->child->sibling->child)
+//  {
+//    char mode = 'l'; // 'l'ookup vs 'c'all
+//
+//    for (fabr_tree *c = t->child->sibling->child; c; c = c->sibling)
+//    {
+//      mode = (c->child->length) == 1 ? 'c' : 'l';
+//      ss = fabr_tree_string(s, c->child->sibling);
+//      //printf("mode '%c' ss >%s<\n", mode, ss);
+//
+//      if (mode == 'l')
+//      {
+//        if (r == NULL) r = (*ss == '\'') ? strdup(ss + 1) : func(data, ss);
+//      }
+//      else // (mode == 'c')
+//      {
+//        char *or = r;
+//        r = call(r, ss);
+//        if (or != r) free(or);
+//      }
+//
+//      free(ss);
+//    }
+//  }
 
   fabr_tree_free(t);
 
