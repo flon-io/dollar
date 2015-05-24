@@ -232,11 +232,13 @@ static char *call(char *s, char *f)
 
 static char *eval(const char *s, void *data, fdol_lookup *func)
 {
-  fabr_tree *t = fabr_parse_all(s, _pipe_parser);
+  //fabr_tree *t = fabr_parse_all(s, _pipe_parser);
+  fabr_tree *t = fabr_parse_f(s, _pipe_parser, 0);
 
-  if (t == NULL) return strdup(s);
+  printf("eval >%s<\n", s);
+  fabr_puts_tree(t, s, 1);
 
-  //fabr_puts_tree(t, s, 1);
+  if (t == NULL || t->result != 1) return strdup(s);
 
   char *ss = fabr_tree_string(s, t->child);
   char *r = func(data, ss);
