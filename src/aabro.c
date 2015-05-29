@@ -318,11 +318,9 @@ fabr_tree *fabr_t_path(fabr_tree *t, size_t index, ...)
 //
 // parters (partial parsers)
 
-//static size_t mm = 0;
-
 static fabr_tree *str(fabr_input *i, char *rx, size_t rxn)
 {
-  //printf("        str() i+o>%s< vs >%s<%zu\n", i->string + i->offset, rx, rxn);
+  //printf("str() i+o>%s< vs >%s<%zu\n", i->string + i->offset, rx, rxn);
 
   fabr_tree *r = fabr_tree_malloc(NULL, "str", i, rxn);
 
@@ -342,9 +340,14 @@ static fabr_tree *str(fabr_input *i, char *rx, size_t rxn)
 fabr_tree *fabr_str(
   char *name, fabr_input *i, char *s)
 {
+  //printf("str()  >[0;34m%s[0;0m<\n", s);
+  //printf("i+o    >[1;33m%s[0;0m<\n", i->string + i->offset);
+
   fabr_tree *r = str(i, s, strlen(s));
 
   r->name = name ? strdup(name) : NULL;
+
+  //printf("str()  result %d %zu\n", r->result, r->length);
 
   return r;
 }
@@ -352,6 +355,8 @@ fabr_tree *fabr_str(
 fabr_tree *fabr_seq(
   char *name, fabr_input *i, fabr_parser *p, ...)
 {
+  size_t off = i->offset;
+
   fabr_tree *r = fabr_tree_malloc(name, "seq", i, 0);
 
   fabr_tree **next = &r->child;
@@ -362,7 +367,7 @@ fabr_tree *fabr_seq(
     fabr_tree *t = p(i);
     *next = t;
 
-    if (t->result != 1) { r->result = 0; r->length = 0; break; }
+    if (t->result != 1) { r->result = 0; break; }
 
     r->length += t->length;
 
@@ -370,6 +375,8 @@ fabr_tree *fabr_seq(
     next = &t->sibling;
   }
   va_end(ap);
+
+  if (r->result != 1) { r->length = 0; i->offset = off; }
 
   return r;
 }
@@ -388,7 +395,7 @@ fabr_tree *fabr_alt(
     fabr_tree *t = p(i);
     *next = t;
 
-    if (t->result == 1) { r->result = 1; r->length = t->length; break; }
+    if (t->result != 0) { r->result = t->result; r->length = t->length; break; }
 
     p = va_arg(ap, fabr_parser *); if (p == NULL) break;
     next = &(t->sibling);
@@ -470,7 +477,8 @@ static void rng_next(char *rx, size_t rxn, char *next)
 
 static fabr_tree *rng(fabr_input *i, char *rx, size_t rxn)
 {
-  //printf("        rng() i+o>%s< >%s<%zu\n", i->string + i->offset, rx, rxn);
+  //printf("        rng() >[0;34m%.*s[0;0m<\n", (int)rxn, rx);
+  //printf("        i+o   >[1;33m%s[0;0m<\n", i->string + i->offset);
 
   fabr_tree *r = fabr_tree_malloc(NULL, "rng", i, rxn);
 
@@ -506,6 +514,8 @@ static fabr_tree *rng(fabr_input *i, char *rx, size_t rxn)
     r->length = 1;
     i->offset += 1;
   }
+
+  //printf("        rng result: %d %zu\n", r->result, r->length);
 
   return r;
 }
@@ -604,22 +614,73 @@ static size_t find_group_end(char *rx, size_t rxn)
   return 0;
 }
 
-static size_t find_str_end(char *rx, size_t rxn)
+static ssize_t find_str_end(char *rx, size_t rxn)
 {
-  for (size_t i = 1; ; i++)
+  //printf("fse >%s<%zu\n", rx, rxn);
+  //printf("fse >%.*s<%zu\n", (int)rxn, rx, rxn);
+
+  for (size_t i = 0; ; i++)
   {
     char c = rx_at(rx, rxn, i);
+
+    //printf("fse c'%c'\n", c);
 
     if (c == '\0') return i;
     if (c == '[' || c == '(') return i;
     if (c == '\\') { i++; continue; }
+
     if (c != '?' && c != '*' && c != '+' && c != '{') continue;
 
+    if (i == 0) break;
+
     if (i == 1) return i; // a*
-    if (i == 2 && rx_at(rx, rxn, 1) == '\\') return i; // \a*
-    return i - 1; // abc* --> ab
+    //if (i == 2 && rx_at(rx, rxn, 0) == '\\') return 0; // \a*
+
+    //if (rx_at(rx, rxn, i - 2) == '\\') return i - 2;
+    if (rx_at(rx, rxn, i - 2) == '\\') return i - 1;
+    return i - 1; // \a\a*
   }
-  return 0;
+
+  return -1; // error
+}
+
+//static size_t mm = 0;
+
+static fabr_tree *rex_str(fabr_input *i, char *rx, size_t rxn)
+{
+  //printf(
+  //  "      * rex_str() >[0;34m%.*s[0;0m<\n", (int)rxn, rx);
+  //printf(
+  //  "        i+o       >[1;33m%s[0;0m<\n", i->string + i->offset);
+
+  fabr_tree *r = fabr_tree_malloc(NULL, "rex_str", i, rxn);
+
+  size_t ii = 0;
+  size_t ri = 0;
+
+  while (1)
+  {
+    char rc = rx_at(rx, rxn, ri++);
+    if (rc == '\\') rc = rx_at(rx, rxn, ri++);
+    //printf(". rc >%c<\n", rc);
+    if (rc == '\0') break;
+
+    char ic = *(i->string + i->offset + ii++);
+    //printf("  ic >%c<\n", ic);
+    if (ic == '\0') { r->result = 0; break; }
+
+    if (ic != rc) { r->result = 0; break; }
+  }
+
+  if (r->result == 1) {
+    i->offset += ii;
+    r->length = ii;
+  }
+  if (r->length == 0) r->result = 0; // ...
+
+  //printf("        rex_str() result: %d %zu\n", r->result, r->length);
+
+  return r;
 }
 
 static fabr_tree *rex_alt(fabr_input *i, char *rx, size_t rxn);
@@ -627,35 +688,40 @@ static fabr_tree *rex_alt(fabr_input *i, char *rx, size_t rxn);
 
 static fabr_tree *rex_rep(fabr_input *i, char *rx, size_t rxn)
 {
-  //size_t m = mm++; printf("    * %zu rex_rep() >%s<%zu\n", m, rx, rxn);
+  //size_t m = mm++;
+  //printf(
+  //  "    * %zu rex_rep() >[0;34m%.*s[0;0m<\n", m, (int)rxn, rx);
+  //printf(
+  //  "    * %zu i+o       >[1;33m%s[0;0m<\n", m, i->string + i->offset);
 
-  char c = rx_at(rx, rxn, 0);
+  char rc = rx_at(rx, rxn, 0);
 
   fabr_rex_parser *p = NULL;
-  size_t z = 0;
+  ssize_t z = 0;
   size_t off = 0;
 
-  if (c == '[')
+  if (rc == '[')
   {
     p = rng;
     z = find_range_end(rx, rxn);
-    //printf("      %zu fre >%s<%zu --> %zu\n", m, rx, rxn, z);
+    //printf("      %zu fre >[0;34m%s[0;0m< --> %zu\n", m, (int)rxn, rx, z);
     if (z == 0) return ferr(i, "rex_rep", "range not closed >%s<%zu", rx, rxn);
     off = 1;
   }
-  else if (c == '(')
+  else if (rc == '(')
   {
     p = rex_alt;
     z = find_group_end(rx, rxn);
-    //printf("      %zu fge >%s<%zu --> %zu\n", m, rx, rxn, z);
+    //printf("      %zu fge >[0;34m%s[0;0m< --> %zu\n", m, (int)rxn, rx, z);
     if (z == 0) return ferr(i, "rex_rep", "group not closed >%s<%zu", rx, rxn);
     off = 1;
   }
   else
   {
-    p = str;
+    p = rex_str;
     z = find_str_end(rx, rxn);
-    //printf("      %zu fse >%s<%zu --> %zu\n", m, rx, rxn, z);
+    //printf("      %zu fse >[0;34m%.*s[0;0m< --> %zd\n", m, (int)rxn, rx, z);
+    if (z == -1) return ferr(i, "rex_rep", "lone quantifier >%s<%zu", rx, rxn);
   }
 
   size_t mm[] = { 0, 0 };
@@ -708,8 +774,11 @@ static fabr_tree *rex_rep(fabr_input *i, char *rx, size_t rxn)
 
 static fabr_tree *rex_seq(fabr_input *i, char *rx, size_t rxn)
 {
-  //size_t m = mm++; printf("  * %zu rex_seq() >%s<%zu\n", m, rx, rxn);
-  //printf("    %zu input >%s<%zu\n", m, i->string, i->offset);
+  //size_t m = mm++;
+  //printf("  * %zu rex_seq() >[0;34m%.*s[0;0m<\n", m, (int)rxn, rx);
+  //printf("  * %zu i+o       >[1;33m%s[0;0m<\n", m, i->string + i->offset);
+
+  size_t off = i->offset;
 
   fabr_tree *r = fabr_tree_malloc(NULL, "rex_seq", i, rxn);
 
@@ -744,7 +813,9 @@ static fabr_tree *rex_seq(fabr_input *i, char *rx, size_t rxn)
   }
 
   r->result = prev->result;
-  if (r->result != 1) r->length = 0;
+  if (r->result != 1) { r->length = 0; i->offset = off; }
+
+  //printf("    %zu rex_seq() result: %d %zu\n", m, r->result, r->length);
 
   return r;
 }
@@ -766,8 +837,12 @@ static fabr_tree *rex_alt(fabr_input *i, char *rx, size_t rxn)
 
   do
   {
-    //printf("* %zu.%zu rex_alt() >%s<%zu c%i\n", m, n, crx, crxn, c);
-    //printf("  %zu.%zu input >%s<%zu\n", m, n, i->string, i->offset);
+    //printf(
+    //  "* %zu.%zu rex_alt() >[0;34m%.*s[0;0m< c%i\n",
+    //  m, n, (int)crxn, crx, c);
+    //printf(
+    //  "  %zu.%zu i+o       >[1;33m%s[0;0m<\n",
+    //  m, n, i->string + i->offset);
     //n++;
 
     for (size_t j = 0, range = 0, groups = 0; ; j++)
@@ -829,6 +904,8 @@ fabr_tree *fabr_rex(
 fabr_tree *fabr_jseq(
   char *name, fabr_input *i, fabr_parser *eltp, fabr_parser *sepp)
 {
+  size_t off = i->offset;
+
   fabr_parser *ps[] = { eltp, sepp };
 
   fabr_tree *r = fabr_tree_malloc(name, "jseq", i, 0);
@@ -842,14 +919,11 @@ fabr_tree *fabr_jseq(
     fabr_tree *t = ps[j](i);
     *next = t;
 
-    if (t->result == -1)
-    {
-      r->result = -1; r->length = 0;
-      break;
-    }
+    if (t->result == -1) { r->result = -1; break; }
+
     if (t->result == 0)
     {
-      if (j == 0) { r->result = 0; r->length = 0; }
+      if (j == 0) r->result = 0;
       break;
     }
 
@@ -857,6 +931,8 @@ fabr_tree *fabr_jseq(
 
     next = &t->sibling;
   }
+
+  if (r->result != 1) { r->length = 0; i->offset = off; }
 
   return r;
 }
@@ -917,3 +993,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
+//commit 53857d51c7e9761c2f7796eebf9490a97857ed77
+//Author: John Mettraux <jmettraux@gmail.com>
+//Date:   Sun May 31 05:43:53 2015 +0900
+//
+//    fix fabr_rex() vs input->offset issue

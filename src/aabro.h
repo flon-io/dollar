@@ -199,3 +199,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
+//commit 53857d51c7e9761c2f7796eebf9490a97857ed77
+//Author: John Mettraux <jmettraux@gmail.com>
+//Date:   Sun May 31 05:43:53 2015 +0900
+//
+//    fix fabr_rex() vs input->offset issue
