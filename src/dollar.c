@@ -223,45 +223,48 @@ static char *call(char *s, char *f)
 
 static char *eval(const char *s, void *data, fdol_lookup *func)
 {
-  //fabr_tree *t = fabr_parse_all(s, _pipe_parser);
-  fabr_tree *t = fabr_parse_f(s, _pipe_parser, 0);
+  fabr_tree *t = fabr_parse_all(s, _pipe_parser);
+  //fabr_tree *t = fabr_parse_f(s, _pipe_parser, 0);
 
-  printf("eval >%s<\n", s);
-  fabr_puts_tree(t, s, 1);
+  //printf("eval >%s<\n", s);
+  //fabr_puts_tree(t, s, 1);
 
   if (t == NULL || t->result != 1) return strdup(s);
 
-  char *ss = fabr_tree_string(s, t->child);
-  char *r = func(data, ss);
-  free(ss);
+  char *r = NULL;
+  char mode = 'l'; // 'l'ookup vs 'c'all
 
-  //printf("r 0 >%s<\n", r);
-  //fabr_puts_tree(t->child->sibling->child, s, 1);
+  for (fabr_tree *c = t->child->child; c; c = c->sibling)
+  {
+    //printf("--- m'%c' r >%s<\n", mode, r);
+    //fabr_puts_tree(c, s, 1);
 
-//  if (t->child->sibling->child)
-//  {
-//    char mode = 'l'; // 'l'ookup vs 'c'all
-//
-//    for (fabr_tree *c = t->child->sibling->child; c; c = c->sibling)
-//    {
-//      mode = (c->child->length) == 1 ? 'c' : 'l';
-//      ss = fabr_tree_string(s, c->child->sibling);
-//      //printf("mode '%c' ss >%s<\n", mode, ss);
-//
-//      if (mode == 'l')
-//      {
-//        if (r == NULL) r = (*ss == '\'') ? strdup(ss + 1) : func(data, ss);
-//      }
-//      else // (mode == 'c')
-//      {
-//        char *or = r;
-//        r = call(r, ss);
-//        if (or != r) free(or);
-//      }
-//
-//      free(ss);
-//    }
-//  }
+    if (*c->name == 'p')
+    {
+      if (c->length > 1 && r) return r;
+
+      if (c->length == 1) mode = 'c';
+
+      continue;
+    }
+
+    // else (*c->name == 's')
+
+    char *ss = fabr_tree_string(s, c);
+
+    if (mode == 'l')
+    {
+      r = (*ss == '\'') ? strdup(ss + 1) : func(data, ss);
+    }
+    else // 'c'
+    {
+      char *or = r;
+      r = call(r, ss);
+      if (or != r) free(or);
+    }
+
+    free(ss);
+  }
 
   fabr_tree_free(t);
 
