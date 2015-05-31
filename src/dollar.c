@@ -241,9 +241,9 @@ static char *eval(const char *s, void *data, fdol_lookup *func)
 
     if (*c->name == 'p')
     {
-      if (c->length > 1 && r) return r;
+      mode = c->length == 1 ? 'c' : 'l';
 
-      if (c->length == 1) mode = 'c';
+      if (c->length > 1 && r) return r;
 
       continue;
     }
