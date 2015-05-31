@@ -91,18 +91,9 @@ static fabr_tree *_parser(fabr_input *i)
 static fabr_tree *_nopi(fabr_input *i) { return fabr_rex("s", i, "[^|]+"); }
 static fabr_tree *_pi(fabr_input *i) { return fabr_rex("p", i, "\\|\\|?"); }
 
-static fabr_tree *_pi_nopi(fabr_input *i)
-{
-  return fabr_seq(NULL, i, _pi, _nopi, NULL);
-}
-static fabr_tree *_pi_nopi_star(fabr_input *i)
-{
-  return fabr_rep(NULL, i, _pi_nopi, 0, 0);
-}
-
 static fabr_tree *_pipe_parser(fabr_input *i)
 {
-  return fabr_seq(NULL, i, _nopi, _pi_nopi_star, NULL);
+  return fabr_jseq(NULL, i, _nopi, _pi);
 }
 
 
@@ -328,7 +319,7 @@ static char *do_expand(const char *s, int quote, void *data, fdol_lookup *func)
   if (strchr(s, '$') == NULL) return strdup(s);
 
   fabr_tree *t = fabr_parse_all(s, _parser);
-  fabr_puts_tree(t, s, 1);
+  //fabr_puts_tree(t, s, 1);
   char *r = expand(s, t->child, quote, data, func);
   fabr_tree_free(t);
 
