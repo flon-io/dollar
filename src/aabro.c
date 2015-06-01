@@ -320,7 +320,7 @@ fabr_tree *fabr_t_path(fabr_tree *t, size_t index, ...)
 
 static fabr_tree *str(fabr_input *i, char *rx, size_t rxn)
 {
-  //printf("str() i+o>%s< vs >%s<%zu\n", i->string + i->offset, rx, rxn);
+  //printf("str() i+o>%s< vs >%.*s<\n", i->string + i->offset, (int)rxn, rx);
 
   fabr_tree *r = fabr_tree_malloc(NULL, "str", i, rxn);
 
@@ -352,6 +352,10 @@ fabr_tree *fabr_str(
   return r;
 }
 
+fabr_tree *fabr_qmark(fabr_input *i) { return NULL; }
+fabr_tree *fabr_star(fabr_input *i) { return NULL; }
+fabr_tree *fabr_plus(fabr_input *i) { return NULL; }
+
 fabr_tree *fabr_seq(
   char *name, fabr_input *i, fabr_parser *p, ...)
 {
@@ -364,15 +368,66 @@ fabr_tree *fabr_seq(
   va_list ap; va_start(ap, p);
   while (1)
   {
-    fabr_tree *t = p(i);
-    *next = t;
+    if (r->result != 1) break;
 
-    if (t->result != 1) { r->result = 0; break; }
+    if (p == NULL) break;
 
-    r->length += t->length;
+    if (p == fabr_qmark || p == fabr_star || p == fabr_plus)
+    {
+      r->result = -1;
+      r->note = strdup("bad position for fabr_qmark, _star or _plus");
+      break;
+    }
 
-    p = va_arg(ap, fabr_parser *); if (p == NULL) break;
-    next = &t->sibling;
+    fabr_parser *np = va_arg(ap, fabr_parser *);
+
+    for (size_t count = 0; ; count++)
+    {
+      fabr_tree *t = p(i);
+
+      if (t->result == -1) { r->result = -1; break; }
+
+      if (t->result == 0 && i->flags & FABR_F_PRUNE)
+      {
+        fabr_tree_free(t);
+        t = NULL;
+      }
+      else
+      {
+        *next = t;
+        next = &t->sibling;
+        r->length += t->length;
+      }
+
+      if (np == fabr_qmark)
+      {
+        break;
+      }
+      /* else */ if (np == fabr_star)
+      {
+        if (t == NULL || t->result == 0) break;
+      }
+      else if (np == fabr_plus)
+      {
+        if (t == NULL || t->result == 0)
+        {
+          if (count == 0) r->result = 0;
+          break;
+        }
+      }
+      else
+      {
+        if (t == NULL || t->result == 0) r->result = 0;
+        break;
+      }
+    }
+
+    p = np; // well...
+
+    if (p == fabr_qmark || p == fabr_star || p == fabr_plus)
+    {
+      p = va_arg(ap, fabr_parser *);
+    }
   }
   va_end(ap);
 
@@ -410,6 +465,8 @@ fabr_tree *fabr_alt(
 fabr_tree *fabr_rep(
   char *name, fabr_input *i, fabr_parser *p, size_t min, size_t max)
 {
+  size_t off = i->offset;
+
   fabr_tree *r = fabr_tree_malloc(name, "rep", i, 0);
 
   fabr_tree **next = &r->child;
@@ -439,7 +496,7 @@ fabr_tree *fabr_rep(
   }
 
   if (r->result == 1 && count < min) r->result = 0;
-  if (r->result != 1) r->length = 0;
+  if (r->result != 1) { r->length = 0; i->offset = off; }
 
   return r;
 }
@@ -914,7 +971,7 @@ fabr_tree *fabr_jseq(
 
   for (int j = 0; ; j = j == 1 ? 0 : 1)
   {
-    if (*(i->string + i->offset) == 0) break;
+    if (*(i->string + i->offset) == 0) break; // EOS
 
     fabr_tree *t = ps[j](i);
     *next = t;
@@ -993,8 +1050,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit 53857d51c7e9761c2f7796eebf9490a97857ed77
+//commit 21f3311f03f3e3844670fd5f0e9fd34bd46b7f75
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sun May 31 05:43:53 2015 +0900
+//Date:   Tue Jun 2 06:00:40 2015 +0900
 //
-//    fix fabr_rex() vs input->offset issue
+//    add specs for fabr_plus()

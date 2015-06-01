@@ -176,6 +176,10 @@ fabr_tree *fabr_jseq(
 fabr_tree *fabr_all(
   char *name, fabr_input *i, fabr_parser *p);
 
+fabr_tree *fabr_qmark(fabr_input *);
+fabr_tree *fabr_star(fabr_input *);
+fabr_tree *fabr_plus(fabr_input *);
+
 
 //
 // helpers
@@ -199,8 +203,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit 53857d51c7e9761c2f7796eebf9490a97857ed77
+//commit 21f3311f03f3e3844670fd5f0e9fd34bd46b7f75
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sun May 31 05:43:53 2015 +0900
+//Date:   Tue Jun 2 06:00:40 2015 +0900
 //
-//    fix fabr_rex() vs input->offset issue
+//    add specs for fabr_plus()
