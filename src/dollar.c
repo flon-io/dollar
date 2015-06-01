@@ -229,9 +229,10 @@ static char *eval(const char *s, void *data, fdol_lookup *func)
   //printf("eval >%s<\n", s);
   //fabr_puts_tree(t, s, 1);
 
-  if (t == NULL || t->result != 1) return strdup(s);
-
   char *r = NULL;
+
+  if (t == NULL || t->result != 1) { r = strdup(s); goto _over; }
+
   char mode = 'l'; // 'l'ookup vs 'c'all
 
   for (fabr_tree *c = t->child->child; c; c = c->sibling)
@@ -243,7 +244,7 @@ static char *eval(const char *s, void *data, fdol_lookup *func)
     {
       mode = c->length == 1 ? 'c' : 'l';
 
-      if (c->length > 1 && r) return r;
+      if (c->length > 1 && r) goto _over;
 
       continue;
     }
@@ -265,6 +266,8 @@ static char *eval(const char *s, void *data, fdol_lookup *func)
 
     free(ss);
   }
+
+_over:
 
   fabr_tree_free(t);
 
