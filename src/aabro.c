@@ -958,35 +958,64 @@ fabr_tree *fabr_rex(
   return r;
 }
 
-fabr_tree *fabr_jseq(
-  char *name, fabr_input *i, fabr_parser *eltp, fabr_parser *sepp)
+fabr_tree *fabr_eseq(
+  char *name, fabr_input *i,
+  fabr_parser *startp, fabr_parser *eltp, fabr_parser *sepp, fabr_parser *endp)
 {
   size_t off = i->offset;
 
-  fabr_parser *ps[] = { eltp, sepp };
-
-  fabr_tree *r = fabr_tree_malloc(name, "jseq", i, 0);
-
+  fabr_tree *r = fabr_tree_malloc(name, "eseq", i, 0);
   fabr_tree **next = &r->child;
+
+  if (startp)
+  {
+    fabr_tree *t = startp(i);
+    *next = t;
+
+    if (t->result != 1) { r->result = 0; return r; }
+
+    r->length += t->length;
+    next = &t->sibling;
+  }
+
+  fabr_parser *ps[] = { eltp, sepp };
 
   for (int j = 0; ; j = j == 1 ? 0 : 1)
   {
     if (*(i->string + i->offset) == 0) break; // EOS
 
     fabr_tree *t = ps[j](i);
+    fabr_tree **n = next;
     *next = t;
+    next = &t->sibling;
 
     if (t->result == -1) { r->result = -1; break; }
 
     if (t->result == 0)
     {
-      if (j == 0) r->result = 0;
+      if (j == 0) // no element
+      {
+        r->result = 0;
+      }
+      else if (i->flags & FABR_F_PRUNE) // no separator but prune
+      {
+        *n = NULL;
+        next = n;
+        fabr_tree_free(t);
+      }
       break;
     }
 
     r->length += t->length;
+  }
 
-    next = &t->sibling;
+  if (r->result == 1 && endp)
+  {
+    fabr_tree *t = endp(i);
+    *next = t;
+
+    r->result = t->result;
+    r->length += t->length;
   }
 
   if (r->result != 1) { r->length = 0; i->offset = off; }
@@ -1050,8 +1079,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit 21f3311f03f3e3844670fd5f0e9fd34bd46b7f75
+//commit 2ec85a9c93bd0f4c9cfb5ea57baa6c3830ed70ad
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Tue Jun 2 06:00:40 2015 +0900
+//Date:   Sat Jun 6 06:22:25 2015 +0900
 //
-//    add specs for fabr_plus()
+//    use fabr_eseq() in spec/tree_functions_spec.rb

@@ -170,8 +170,12 @@ fabr_tree *fabr_rng(
 fabr_tree *fabr_rex(
   char *name, fabr_input *i, char *rex);
 
-fabr_tree *fabr_jseq(
-  char *name, fabr_input *i, fabr_parser *eltp, fabr_parser *sepp);
+fabr_tree *fabr_eseq(
+  char *name, fabr_input *i,
+  fabr_parser *startp, fabr_parser *eltp, fabr_parser *sepp, fabr_parser *endp);
+
+#define fabr_jseq(name, i, eltp, sepp) \
+  fabr_eseq(name, i, NULL, eltp, sepp, NULL)
 
 fabr_tree *fabr_all(
   char *name, fabr_input *i, fabr_parser *p);
@@ -203,8 +207,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit 21f3311f03f3e3844670fd5f0e9fd34bd46b7f75
+//commit 2ec85a9c93bd0f4c9cfb5ea57baa6c3830ed70ad
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Tue Jun 2 06:00:40 2015 +0900
+//Date:   Sat Jun 6 06:22:25 2015 +0900
 //
-//    add specs for fabr_plus()
+//    use fabr_eseq() in spec/tree_functions_spec.rb
