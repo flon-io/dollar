@@ -718,6 +718,7 @@ static fabr_tree *rex_str(fabr_input *i, char *rx, size_t rxn)
   while (1)
   {
     char rc = rx_at(rx, rxn, ri++);
+    char prc = rc;
     if (rc == '\\') rc = rx_at(rx, rxn, ri++);
     //printf(". rc >%c<\n", rc);
     if (rc == '\0') break;
@@ -725,6 +726,8 @@ static fabr_tree *rex_str(fabr_input *i, char *rx, size_t rxn)
     char ic = *(i->string + i->offset + ii++);
     //printf("  ic >%c<\n", ic);
     if (ic == '\0') { r->result = 0; break; }
+
+    if (rc == '.' && prc == rc && ic != '\n') continue;
 
     if (ic != rc) { r->result = 0; break; }
   }
@@ -847,7 +850,7 @@ static fabr_tree *rex_seq(fabr_input *i, char *rx, size_t rxn)
 
   while (1)
   {
-    if (*(i->string + i->offset) == '\0') break;
+    //if (*(i->string + i->offset) == '\0') break; // EOS
     if (rx_at(crx, crxn, 0) == '\0') break;
 
     *next = rex_rep(i, crx, crxn);
@@ -869,7 +872,8 @@ static fabr_tree *rex_seq(fabr_input *i, char *rx, size_t rxn)
     //  m, i->string + i->offset, crx, crxn);
   }
 
-  r->result = prev->result;
+  r->result = prev ? prev->result : 0;
+
   if (r->result != 1) { r->length = 0; i->offset = off; }
 
   //printf("    %zu rex_seq() result: %d %zu\n", m, r->result, r->length);
@@ -1079,8 +1083,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit 2ec85a9c93bd0f4c9cfb5ea57baa6c3830ed70ad
+//commit 3ebfb2cac5e58d5d10a8ae7f464edaa40e8d677f
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 6 06:22:25 2015 +0900
+//Date:   Mon Jun 8 08:01:54 2015 +0900
 //
-//    use fabr_eseq() in spec/tree_functions_spec.rb
+//    scaffold spec/combinations_spec.c
