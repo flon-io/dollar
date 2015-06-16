@@ -207,8 +207,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit 3ebfb2cac5e58d5d10a8ae7f464edaa40e8d677f
+//commit 419477a2e7845a1695015d213804040d7e1c841b
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Mon Jun 8 08:01:54 2015 +0900
+//Date:   Tue Jun 16 08:58:25 2015 +0900
 //
-//    scaffold spec/combinations_spec.c
+//    fix "no progress" issue for fabr_rep()
