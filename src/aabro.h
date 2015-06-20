@@ -77,7 +77,7 @@ char *fabr_tree_string(const char *input, fabr_tree *t);
  * Does not return a new char*.
  * Returns the pointer even if the tree is not a successful one.
  */
-char *fabr_tree_str(char *input, fabr_tree *t);
+char *fabr_tree_str(const char *input, fabr_tree *t);
 
 /* Given a fabr_tree resulting from a parse run, returns the error message
  * or NULL if none.
@@ -177,6 +177,9 @@ fabr_tree *fabr_eseq(
 #define fabr_jseq(name, i, eltp, sepp) \
   fabr_eseq(name, i, NULL, eltp, sepp, NULL)
 
+fabr_tree *fabr_rename(
+  char *name, fabr_input *i, fabr_parser *p);
+
 fabr_tree *fabr_all(
   char *name, fabr_input *i, fabr_parser *p);
 
@@ -207,8 +210,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit 419477a2e7845a1695015d213804040d7e1c841b
+//commit d066c456d9133ca33f9e4d1da35d0061aaedc119
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Tue Jun 16 08:58:25 2015 +0900
+//Date:   Sat Jun 20 12:21:49 2015 +0900
 //
-//    fix "no progress" issue for fabr_rep()
+//    set const on fabr_tree_str() char input

@@ -101,9 +101,9 @@ char *fabr_tree_string(const char *input, fabr_tree *t)
   return strndup(input + t->offset, t->length);
 }
 
-char *fabr_tree_str(char *input, fabr_tree *t)
+char *fabr_tree_str(const char *input, fabr_tree *t)
 {
-  return input + t->offset;
+  return (char *)input + t->offset;
 }
 
 static void fabr_t_to_s(
@@ -1049,6 +1049,17 @@ fabr_tree *fabr_eseq(
   return r;
 }
 
+fabr_tree *fabr_rename(
+  char *name, fabr_input *i, fabr_parser *p)
+{
+  fabr_tree *r = p(i);
+
+  if (r->name) { free(r->name); r->name = NULL; }
+  if (name) r->name = strdup(name);
+
+  return r;
+}
+
 fabr_tree *fabr_all(
   char *name, fabr_input *i, fabr_parser *p)
 {
@@ -1105,8 +1116,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit 419477a2e7845a1695015d213804040d7e1c841b
+//commit d066c456d9133ca33f9e4d1da35d0061aaedc119
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Tue Jun 16 08:58:25 2015 +0900
+//Date:   Sat Jun 20 12:21:49 2015 +0900
 //
-//    fix "no progress" issue for fabr_rep()
+//    set const on fabr_tree_str() char input
