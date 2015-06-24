@@ -61,12 +61,19 @@ char *fabr_tree_to_string(fabr_tree *t, const char *input, short color);
  */
 void fabr_puts_tree(fabr_tree *t, const char *input, short color);
 
+
 /* Returns a string representation (JSON) of the fabr_tree.
  * The children are not displayed. If the tree is a leaf and the input
  * is not NULL, the parsed string is displayed, else the children count
  * is displayed.
  */
 char *fabr_tree_to_str(fabr_tree *t, const char *input, short color);
+
+/* Like fabr_puts_tree() but the last arg accept flags (1 for colours,
+ * 2 for children, so 3 for both).
+ */
+void fabr_tree_puts(fabr_tree *t, const char *input, short flags);
+#define fabr_puts(t, input, flags) fabr_tree_puts(t, input, flags)
 
 /* Returns a copy of the string behind the fabr_tree.
  * Returns an empty string if the tree is not a successful one.
@@ -115,10 +122,18 @@ typedef short fabr_tree_func(const fabr_tree *);
  */
 flu_list *fabr_tree_list(fabr_tree *t, fabr_tree_func *f);
 
+/* Like fabr_tree_list() but doesn't consider the root of t.
+ */
+flu_list *fabr_tree_list_cn(fabr_tree *t, fabr_tree_func *f);
+
 /* Given a tree (starting point) and a fabr_tree_func, collects all the
  * [sub-trees] that have a result to 1 and the given name.
  */
 flu_list *fabr_tree_list_named(fabr_tree *t, const char *name);
+
+/* Like fabr_tree_list_named() but doesn't consider the root of t.
+ */
+flu_list *fabr_tree_list_named_cn(fabr_tree *t, const char *name);
 
 /* Like fabr_tree_list() but returns directly an array of fabr_tree*.
  */
@@ -158,8 +173,10 @@ fabr_tree *fabr_str(
 fabr_tree *fabr_seq(
   char *name, fabr_input *i, fabr_parser *p, ...);
 
-fabr_tree *fabr_alt(
-  char *name, fabr_input *i, fabr_parser *p, ...);
+fabr_tree *fabr_altg(
+  char *name, fabr_input *i, short greedy, fabr_parser *p, ...);
+#define fabr_alt(name, i, p, ...) \
+  fabr_altg(name, i, 0, p, __VA_ARGS__)
 
 fabr_tree *fabr_rep(
   char *name, fabr_input *i, fabr_parser *p, size_t min, size_t max);
@@ -210,8 +227,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit d066c456d9133ca33f9e4d1da35d0061aaedc119
+//commit bddf1d69db11a9ba3264d17d51ccbdc408a7db11
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 20 12:21:49 2015 +0900
+//Date:   Thu Jun 25 06:35:45 2015 +0900
 //
-//    set const on fabr_tree_str() char input
+//    implement fabr_altg()

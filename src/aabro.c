@@ -133,7 +133,7 @@ static void fabr_t_to_s(
   if (t->name) free(name);
   if (t->note) free(note);
 
-  if (children != 1 && (input == NULL || t->result != 1 || t->child))
+  if (children == 0 && (input == NULL || t->result != 1 || t->child))
   {
     size_t cc = 0; for (fabr_tree *c = t->child; c; c = c->sibling) ++cc;
     flu_sbprintf(b, "%zu ]%s", cc, clearc);
@@ -190,6 +190,17 @@ char *fabr_tree_to_str(fabr_tree *t, const char *input, short color)
   return flu_sbuffer_to_string(b);
 }
 
+void fabr_tree_puts(fabr_tree *t, const char *input, short flags)
+{
+  flu_sbuffer *b = flu_sbuffer_malloc();
+  fabr_t_to_s(t, input, b, 0, flags & 2, flags & 1);
+  char *s = flu_sbuffer_to_string(b);
+
+  puts(s);
+
+  free(s);
+}
+
 
 //
 // helper functions
@@ -233,16 +244,20 @@ char *fabr_lookup_string(const char *input, fabr_tree *t, const char *name)
   return tt ? fabr_tree_string(input, tt) : NULL;
 }
 
-static void fabr_t_list(flu_list *l, fabr_tree *t, fabr_tree_func *f)
+static void fabr_t_list(
+  flu_list *l, fabr_tree *t, fabr_tree_func *f, int skip)
 {
-  short r = f(t);
+  if ( ! skip)
+  {
+    short r = f(t);
 
-  if (r < 0) { return; }
-  if (r > 0) { flu_list_add(l, t); return; }
+    if (r < 0) { return; }
+    if (r > 0) { flu_list_add(l, t); return; }
+  }
 
   for (fabr_tree *c = t->child; c != NULL; c = c->sibling)
   {
-    fabr_t_list(l, c, f);
+    fabr_t_list(l, c, f, 0);
   }
 }
 
@@ -250,19 +265,33 @@ flu_list *fabr_tree_list(fabr_tree *t, fabr_tree_func *f)
 {
   flu_list *l = flu_list_malloc();
 
-  fabr_t_list(l, t, f);
+  fabr_t_list(l, t, f, 0);
 
   return l;
 }
 
-static void fabr_t_list_named(flu_list *l, fabr_tree *t, const char *name)
+flu_list *fabr_tree_list_cn(fabr_tree *t, fabr_tree_func *f)
 {
-  if (t->result != 1) { return; }
-  if (t->name && strcmp(t->name, name) == 0) { flu_list_add(l, t); return; }
+  flu_list *l = flu_list_malloc();
+
+  fabr_t_list(l, t, f, 1);
+
+  return l;
+}
+
+static void fabr_t_list_named(
+  flu_list *l, fabr_tree *t, const char *name, int skip)
+{
+  if ( ! skip)
+  {
+    if (t->result != 1) { return; }
+    if (t->name && name == NULL) { flu_list_add(l, t); return; }
+    if (t->name && strcmp(t->name, name) == 0) { flu_list_add(l, t); return; }
+  }
 
   for (fabr_tree *c = t->child; c != NULL; c = c->sibling)
   {
-    fabr_t_list_named(l, c, name);
+    fabr_t_list_named(l, c, name, 0);
   }
 }
 
@@ -270,7 +299,16 @@ flu_list *fabr_tree_list_named(fabr_tree *t, const char *name)
 {
   flu_list *l = flu_list_malloc();
 
-  fabr_t_list_named(l, t, name);
+  fabr_t_list_named(l, t, name, 0);
+
+  return l;
+}
+
+flu_list *fabr_tree_list_named_cn(fabr_tree *t, const char *name)
+{
+  flu_list *l = flu_list_malloc();
+
+  fabr_t_list_named(l, t, name, 1);
 
   return l;
 }
@@ -367,8 +405,6 @@ fabr_tree *fabr_seq(
 
   fabr_tree *r = fabr_tree_malloc(name, "seq", i, 0);
 
-  //if (*(i->string + i->offset) == 0) { r->result = 0; return r; } // EOS
-
   fabr_tree **next = &r->child;
 
   va_list ap; va_start(ap, p);
@@ -449,17 +485,63 @@ fabr_tree *fabr_seq(
   return r;
 }
 
-fabr_tree *fabr_alt(
-  char *name, fabr_input *i, fabr_parser *p, ...)
-{
-  //size_t m = mm++; printf("A %zu fabr_alt() \"%s\"\n", m, name);
+//fabr_tree *fabr_p_alt(
+//  const char *input,
+//  size_t offset, size_t depth,
+//  fabr_parser *p,
+//  int flags)
+//{
+//  short result = 0;
+//
+//  fabr_tree *first = NULL;
+//  fabr_tree *prev = NULL;
+//  fabr_tree *winner = NULL;
+//
+//  for (size_t i = 0; p->children[i] != NULL; i++)
+//  {
+//    fabr_parser *pc = p->children[i];
+//
+//    fabr_tree *t = fabr_do_parse(input, offset, depth + 1, pc, flags);
+//
+//    if (first == NULL) first = t;
+//    if (prev != NULL) prev->sibling = t;
+//    prev = t;
+//
+//    if (t->result == 1) result = 1;
+//    if (t->result < 0) result = t->result;
+//
+//    if (result < 0) break;
+//    if (t->result != 1) continue;
+//
+//    if (p->type == fabr_pt_alt)
+//    {
+//      winner = t; break;
+//    }
+//    if (winner != NULL && t->length <= winner->length)
+//    {
+//      t->result = 0; continue;
+//    }
+//    if (winner) winner->result = 0;
+//    winner = t;
+//  }
+//
+//  return fabr_tree_malloc(
+//    result, offset, winner ? winner->length : 0, NULL, p, first);
+//}
 
-  fabr_tree *r = fabr_tree_malloc(name, "alt", i, 0);
+fabr_tree *fabr_altg(
+  char *name, fabr_input *i, short greedy, fabr_parser *p, ...)
+{
+  //size_t m = mm++; printf("A %zu fabr_altg() %d \"%s\"\n", m, greedy, name);
+
+  size_t off = i->offset;
+
+  fabr_tree *r = fabr_tree_malloc(name, greedy ? "altg" : "alt", i, 0);
   r->result = 0;
 
-  //if (*(i->string + i->offset) == 0) return r; // EOS
-
   fabr_tree **next = &r->child;
+
+  fabr_tree *winner = NULL;
 
   va_list ap; va_start(ap, p);
   while (1)
@@ -467,17 +549,36 @@ fabr_tree *fabr_alt(
     fabr_tree *t = p(i);
     *next = t;
 
-    if (t->result != 0) { r->result = t->result; r->length = t->length; break; }
+    if (t->result == -1) { winner = t; break; }
+
+    if (t->result == 1)
+    {
+      if ( ! greedy) { winner = t; break; }
+      if (winner == NULL || t->length > winner->length)
+      {
+        if (winner) winner->result = 0;
+         winner = t;
+      }
+    }
 
     p = va_arg(ap, fabr_parser *); if (p == NULL) break;
+
+    i->offset = off;
     next = &(t->sibling);
   }
   va_end(ap);
 
+  if (winner)
+  {
+    r->result = winner->result;
+    r->length = winner->length;
+  }
+
   if (r->result == 1 && (i->flags & FABR_F_PRUNE)) fabr_prune(r);
 
   //printf(
-  //  "  %zu fabr_alt() \"%s\" res %d len %zu\n", m, name, r->result, r->length);
+  //  "  %zu fabr_alt() %d \"%s\" res %d len %zu\n",
+  //  m, greedy, name, r->result, r->length);
 
   return r;
 }
@@ -495,8 +596,6 @@ fabr_tree *fabr_rep(
   while (1)
   {
     size_t ffo = i->offset;
-
-    //if (*(i->string + i->offset) == 0) break; // EOS
 
     fabr_tree *t = p(i);
 
@@ -741,15 +840,23 @@ static fabr_tree *rex_str(fabr_input *i, char *rx, size_t rxn)
   {
     char rc = rx_at(rx, rxn, ri++);
     char prc = rc;
+
     if (rc == '\\') rc = rx_at(rx, rxn, ri++);
     //printf(". rc >%c<\n", rc);
     if (rc == '\0') break;
 
     char ic = *(i->string + i->offset + ii++);
     //printf("  ic >%c<\n", ic);
+
+    if (rc == '$' && prc == rc) // unescaped dollar
+    {
+      if (ic != '\n' && ic != '\r' && ic != '\0') r->result = 0;
+      ii--; break;
+    }
+
     if (ic == '\0') { r->result = 0; break; }
 
-    if (rc == '.' && prc == rc && ic != '\n') continue;
+    if (rc == '.' && prc == rc && ic != '\n' && ic != '\r') continue;
 
     if (ic != rc) { r->result = 0; break; }
   }
@@ -760,7 +867,8 @@ static fabr_tree *rex_str(fabr_input *i, char *rx, size_t rxn)
   }
   if (r->length == 0) r->result = 0; // ...
 
-  //printf("        rex_str() result: %d %zu\n", r->result, r->length);
+  //printf(
+  //  "        rex_str() result: %d %zu\n", r->result, r->length);
 
   return r;
 }
@@ -833,7 +941,7 @@ static fabr_tree *rex_rep(fabr_input *i, char *rx, size_t rxn)
 
   while (1)
   {
-    //if (*(i->string + i->offset) == 0) break; // EOS
+    size_t ffo = i->offset;
 
     fabr_tree *t = p(i, rx + off, z - off);
     *next = t;
@@ -844,6 +952,8 @@ static fabr_tree *rex_rep(fabr_input *i, char *rx, size_t rxn)
     r->length += t->length;
 
     if (++count == mm[1]) break;
+
+    if (ffo == i->offset) break; // no progress
 
     next = &(t->sibling);
   }
@@ -872,7 +982,6 @@ static fabr_tree *rex_seq(fabr_input *i, char *rx, size_t rxn)
 
   while (1)
   {
-    //if (*(i->string + i->offset) == '\0') break; // EOS
     if (rx_at(crx, crxn, 0) == '\0') break;
 
     *next = rex_rep(i, crx, crxn);
@@ -926,7 +1035,6 @@ static fabr_tree *rex_alt(fabr_input *i, char *rx, size_t rxn)
     //printf(
     //  "  %zu.%zu i+o       >[1;33m%s[0;0m<\n",
     //  m, n, i->string + i->offset);
-    //n++;
 
     for (size_t j = 0, range = 0, groups = 0; ; j++)
     {
@@ -958,6 +1066,11 @@ static fabr_tree *rex_alt(fabr_input *i, char *rx, size_t rxn)
 
       // else continue
     }
+
+    //printf(
+    //  "  %zu.%zu rex_alt() result: %d %zu\n",
+    //  m, n, prev->result, prev->length);
+    //n++;
 
     if (prev->result == 1) break;
 
@@ -1008,8 +1121,6 @@ fabr_tree *fabr_eseq(
 
   for (int j = 0; ; j = j == 1 ? 0 : 1)
   {
-    //if (*(i->string + i->offset) == 0) break; // EOS
-
     fabr_tree *t = ps[j](i);
     fabr_tree **n = next;
     *next = t;
@@ -1116,8 +1227,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit d066c456d9133ca33f9e4d1da35d0061aaedc119
+//commit bddf1d69db11a9ba3264d17d51ccbdc408a7db11
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 20 12:21:49 2015 +0900
+//Date:   Thu Jun 25 06:35:45 2015 +0900
 //
-//    set const on fabr_tree_str() char input
+//    implement fabr_altg()
