@@ -227,8 +227,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit bddf1d69db11a9ba3264d17d51ccbdc408a7db11
+//commit b60cde7eae8c8eed1a972fc666bbcab3e8a72c19
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Thu Jun 25 06:35:45 2015 +0900
+//Date:   Sat Jun 27 07:00:13 2015 +0900
 //
-//    implement fabr_altg()
+//    accept empty lists for eseq (not jseq)

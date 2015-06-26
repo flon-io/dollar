@@ -1103,6 +1103,8 @@ fabr_tree *fabr_eseq(
 {
   size_t off = i->offset;
 
+  short jseq = (startp == NULL && endp == NULL);
+
   fabr_tree *r = fabr_tree_malloc(name, "eseq", i, 0);
   fabr_tree **next = &r->child;
 
@@ -1119,9 +1121,11 @@ fabr_tree *fabr_eseq(
 
   fabr_parser *ps[] = { eltp, sepp };
 
-  for (int j = 0; ; j = j == 1 ? 0 : 1)
+  for (size_t j = 0; ; j++)
   {
-    fabr_tree *t = ps[j](i);
+    short jj = j % 2;
+
+    fabr_tree *t = ps[jj](i);
     fabr_tree **n = next;
     *next = t;
     next = &t->sibling;
@@ -1130,7 +1134,7 @@ fabr_tree *fabr_eseq(
 
     if (t->result == 0)
     {
-      if (j == 0) // no element
+      if (jj == 0 && (jseq || j > 0)) // no element
       {
         r->result = 0;
       }
@@ -1227,8 +1231,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit bddf1d69db11a9ba3264d17d51ccbdc408a7db11
+//commit b60cde7eae8c8eed1a972fc666bbcab3e8a72c19
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Thu Jun 25 06:35:45 2015 +0900
+//Date:   Sat Jun 27 07:00:13 2015 +0900
 //
-//    implement fabr_altg()
+//    accept empty lists for eseq (not jseq)
