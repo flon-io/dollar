@@ -485,50 +485,6 @@ fabr_tree *fabr_seq(
   return r;
 }
 
-//fabr_tree *fabr_p_alt(
-//  const char *input,
-//  size_t offset, size_t depth,
-//  fabr_parser *p,
-//  int flags)
-//{
-//  short result = 0;
-//
-//  fabr_tree *first = NULL;
-//  fabr_tree *prev = NULL;
-//  fabr_tree *winner = NULL;
-//
-//  for (size_t i = 0; p->children[i] != NULL; i++)
-//  {
-//    fabr_parser *pc = p->children[i];
-//
-//    fabr_tree *t = fabr_do_parse(input, offset, depth + 1, pc, flags);
-//
-//    if (first == NULL) first = t;
-//    if (prev != NULL) prev->sibling = t;
-//    prev = t;
-//
-//    if (t->result == 1) result = 1;
-//    if (t->result < 0) result = t->result;
-//
-//    if (result < 0) break;
-//    if (t->result != 1) continue;
-//
-//    if (p->type == fabr_pt_alt)
-//    {
-//      winner = t; break;
-//    }
-//    if (winner != NULL && t->length <= winner->length)
-//    {
-//      t->result = 0; continue;
-//    }
-//    if (winner) winner->result = 0;
-//    winner = t;
-//  }
-//
-//  return fabr_tree_malloc(
-//    result, offset, winner ? winner->length : 0, NULL, p, first);
-//}
-
 fabr_tree *fabr_altg(
   char *name, fabr_input *i, short greedy, fabr_parser *p, ...)
 {
@@ -554,10 +510,10 @@ fabr_tree *fabr_altg(
     if (t->result == 1)
     {
       if ( ! greedy) { winner = t; break; }
-      if (winner == NULL || t->length > winner->length)
+      if (winner == NULL || t->length >= winner->length)
       {
         if (winner) winner->result = 0;
-         winner = t;
+        winner = t;
       }
     }
 
@@ -1231,8 +1187,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit b60cde7eae8c8eed1a972fc666bbcab3e8a72c19
+//commit 745d490bd76c961a8e3baa3db9e7e6e92cad4724
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 27 07:00:13 2015 +0900
+//Date:   Sat Jun 27 12:33:18 2015 +0900
 //
-//    accept empty lists for eseq (not jseq)
+//    let fabr_altg() favour the last winner
