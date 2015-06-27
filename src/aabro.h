@@ -51,6 +51,11 @@ typedef struct fabr_tree {
 
 void fabr_tree_free(fabr_tree *t);
 
+/* Prunes a tree of its 0 (failed) branches. Doesn't prune -1 (error)
+ * branches (and of course doesn't prune 1 (success) branches).
+ */
+void fabr_prune(fabr_tree *t);
+
 /* Returns a string representation (JSON) of the fabr_tree, from t to its
  * leaves. If the input is given, the parsed strings are displayed at
  * the leaves.
@@ -227,8 +232,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit 745d490bd76c961a8e3baa3db9e7e6e92cad4724
+//commit 541128641dc309cf11bfd6626286498520d5412b
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 27 12:33:18 2015 +0900
+//Date:   Sat Jun 27 18:24:28 2015 +0900
 //
-//    let fabr_altg() favour the last winner
+//    fix fabr_prune() vs sparse children

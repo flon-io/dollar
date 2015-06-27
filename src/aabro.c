@@ -74,25 +74,26 @@ void fabr_tree_free(fabr_tree *t)
   free(t);
 }
 
-static void fabr_prune(fabr_tree *t)
+void fabr_prune(fabr_tree *t)
 {
   fabr_tree **next = &t->child;
 
-  for (fabr_tree *c = t->child; c != NULL; )
+  for (fabr_tree *c = t->child; c; )
   {
-    if (c->result == 0)
-    {
-      *next = NULL;
-      fabr_tree *s = c->sibling;
-      fabr_tree_free(c);
-      c = s;
-    }
-    else // 1 (when -1 fabr_prune() is not called)
+    fabr_tree *s = c->sibling;
+
+    if (c->result != 0)
     {
       *next = c;
-      c = c->sibling;
       next = &c->sibling;
+      *next = NULL;
     }
+    else
+    {
+      fabr_tree_free(c);
+    }
+
+    c = s;
   }
 }
 
@@ -512,7 +513,7 @@ fabr_tree *fabr_altg(
       if ( ! greedy) { winner = t; break; }
       if (winner == NULL || t->length >= winner->length)
       {
-        if (winner) winner->result = 0;
+        if (winner) { winner->result = 0; winner->length = 0; }
         winner = t;
       }
     }
@@ -528,7 +529,10 @@ fabr_tree *fabr_altg(
   {
     r->result = winner->result;
     r->length = winner->length;
+    i->offset = off + winner->length;
   }
+
+  //fabr_puts(r, i->string, 3);
 
   if (r->result == 1 && (i->flags & FABR_F_PRUNE)) fabr_prune(r);
 
@@ -1187,8 +1191,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit 745d490bd76c961a8e3baa3db9e7e6e92cad4724
+//commit 541128641dc309cf11bfd6626286498520d5412b
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 27 12:33:18 2015 +0900
+//Date:   Sat Jun 27 18:24:28 2015 +0900
 //
-//    let fabr_altg() favour the last winner
+//    fix fabr_prune() vs sparse children
