@@ -808,6 +808,11 @@ static fabr_tree *rex_str(fabr_input *i, char *rx, size_t rxn)
     char ic = *(i->string + i->offset + ii++);
     //printf("  ic >%c<\n", ic);
 
+    if (rc == 'Z' && prc == '\\') // EOS
+    {
+      if (ic != '\0') r->result = 0;
+      ii--; break;
+    }
     if (rc == '$' && prc == rc) // unescaped dollar
     {
       if (ic != '\n' && ic != '\r' && ic != '\0') r->result = 0;
@@ -1063,6 +1068,7 @@ fabr_tree *fabr_eseq(
 {
   size_t off = i->offset;
 
+  short prune = i->flags & FABR_F_PRUNE;
   short jseq = (startp == NULL && endp == NULL);
 
   fabr_tree *r = fabr_tree_malloc(name, "eseq", i, 0);
@@ -1079,35 +1085,43 @@ fabr_tree *fabr_eseq(
     next = &t->sibling;
   }
 
-  fabr_parser *ps[] = { eltp, sepp };
-
   for (size_t j = 0; ; j++)
   {
-    short jj = j % 2;
+    short over = 0;
+    fabr_tree *sept = NULL;
+    fabr_tree *eltt = NULL;
 
-    fabr_tree *t = ps[jj](i);
-    fabr_tree **n = next;
-    *next = t;
-    next = &t->sibling;
+    if (j > 0) sept = sepp(i);
+    if (sept == NULL || sept->result == 1) eltt = eltp(i);
 
-    if (t->result == -1) { r->result = -1; break; }
+    // determine r->result
 
-    if (t->result == 0)
+    if (sept && sept->result == 0) over = 1;
+    else if (sept && sept->result == -1) r->result = -1;
+    else if (sept && sept->result == 1 && sept->length == 0) over = 2;
+    else if (j == 0 && eltt && eltt->result == 0 && jseq == 0) over = 1;
+    else if (eltt && eltt->result != 1) r->result = eltt->result;
+
+    // add or free
+
+    if (over != 2 && sept && (sept->result != 0 || prune == 0))
     {
-      if (jj == 0 && (jseq || j > 0)) // no element
-      {
-        r->result = 0;
-      }
-      else if (i->flags & FABR_F_PRUNE) // no separator but prune
-      {
-        *n = NULL;
-        next = n;
-        fabr_tree_free(t);
-      }
-      break;
+      *next = sept; next = &sept->sibling; r->length += sept->length;
+      sept = NULL;
     }
 
-    r->length += t->length;
+    if (over != 2 && eltt && (eltt->result != 0 || prune == 0))
+    {
+      *next = eltt; next = &eltt->sibling; r->length += eltt->length;
+      eltt = NULL;
+    }
+
+    fabr_tree_free(sept);
+    fabr_tree_free(eltt);
+
+    // break or continue
+
+    if (over || r->result != 1) break;
   }
 
   if (r->result == 1 && endp)
@@ -1124,13 +1138,20 @@ fabr_tree *fabr_eseq(
   return r;
 }
 
-fabr_tree *fabr_rename(
-  char *name, fabr_input *i, fabr_parser *p)
+fabr_tree *fabr_rename(char *name, fabr_input *i, fabr_parser *p)
 {
   fabr_tree *r = p(i);
 
   if (r->name) { free(r->name); r->name = NULL; }
   if (name) r->name = strdup(name);
+
+  return r;
+}
+
+fabr_tree *fabr_eos(char *name, fabr_input *i)
+{
+  fabr_tree *r = fabr_tree_malloc(name, "eos", i, 0);
+  r->result = *(i->string + i->offset) == '\0';
 
   return r;
 }
@@ -1191,8 +1212,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit 541128641dc309cf11bfd6626286498520d5412b
+//commit 6fdc207fdfb470c44a92636581c2a5017c3f304c
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 27 18:24:28 2015 +0900
+//Date:   Sat Jul 4 13:53:31 2015 +0900
 //
-//    fix fabr_prune() vs sparse children
+//    solve fabr_eseq() versus empty sep

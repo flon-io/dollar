@@ -202,6 +202,8 @@ fabr_tree *fabr_eseq(
 fabr_tree *fabr_rename(
   char *name, fabr_input *i, fabr_parser *p);
 
+fabr_tree *fabr_eos(char *name, fabr_input *i);
+
 fabr_tree *fabr_all(
   char *name, fabr_input *i, fabr_parser *p);
 
@@ -232,8 +234,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit 541128641dc309cf11bfd6626286498520d5412b
+//commit 6fdc207fdfb470c44a92636581c2a5017c3f304c
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Sat Jun 27 18:24:28 2015 +0900
+//Date:   Sat Jul 4 13:53:31 2015 +0900
 //
-//    fix fabr_prune() vs sparse children
+//    solve fabr_eseq() versus empty sep
