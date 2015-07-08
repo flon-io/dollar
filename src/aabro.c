@@ -248,6 +248,8 @@ char *fabr_lookup_string(const char *input, fabr_tree *t, const char *name)
 static void fabr_t_list(
   flu_list *l, fabr_tree *t, fabr_tree_func *f, int skip)
 {
+  if (t == NULL) return;
+
   if ( ! skip)
   {
     short r = f(t);
@@ -283,6 +285,8 @@ flu_list *fabr_tree_list_cn(fabr_tree *t, fabr_tree_func *f)
 static void fabr_t_list_named(
   flu_list *l, fabr_tree *t, const char *name, int skip)
 {
+  if (t == NULL) return;
+
   if ( ! skip)
   {
     if (t->result != 1) { return; }
@@ -1212,8 +1216,10 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit bbf7f212bdce4c6a1503fd993313335570d1abcc
+//commit e3904bec072ed31032efbbf0991913dcd601427f
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Wed Jul 8 06:15:01 2015 +0900
+//Date:   Thu Jul 9 06:58:07 2015 +0900
 //
-//    make _alt and _altg "fronts" to _altgr
+//    let fabr_tree_list() accept a NULL tree
+//    
+//    and return an empty list
