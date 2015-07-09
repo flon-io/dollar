@@ -236,10 +236,8 @@ int fabr_match(const char *input, fabr_parser *p);
 
 #endif // FLON_AABRO_H
 
-//commit e3904bec072ed31032efbbf0991913dcd601427f
+//commit 8549c8a26cf41bc6393cbf2ec064bf3ba11e2085
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Thu Jul 9 06:58:07 2015 +0900
+//Date:   Thu Jul 9 08:00:28 2015 +0900
 //
-//    let fabr_tree_list() accept a NULL tree
-//    
-//    and return an empty list
+//    comment out spec debug output

@@ -248,8 +248,6 @@ char *fabr_lookup_string(const char *input, fabr_tree *t, const char *name)
 static void fabr_t_list(
   flu_list *l, fabr_tree *t, fabr_tree_func *f, int skip)
 {
-  if (t == NULL) return;
-
   if ( ! skip)
   {
     short r = f(t);
@@ -266,8 +264,9 @@ static void fabr_t_list(
 
 flu_list *fabr_tree_list(fabr_tree *t, fabr_tree_func *f)
 {
-  flu_list *l = flu_list_malloc();
+  if (t == NULL) return NULL;
 
+  flu_list *l = flu_list_malloc();
   fabr_t_list(l, t, f, 0);
 
   return l;
@@ -275,8 +274,9 @@ flu_list *fabr_tree_list(fabr_tree *t, fabr_tree_func *f)
 
 flu_list *fabr_tree_list_cn(fabr_tree *t, fabr_tree_func *f)
 {
-  flu_list *l = flu_list_malloc();
+  if (t == NULL) return NULL;
 
+  flu_list *l = flu_list_malloc();
   fabr_t_list(l, t, f, 1);
 
   return l;
@@ -285,8 +285,6 @@ flu_list *fabr_tree_list_cn(fabr_tree *t, fabr_tree_func *f)
 static void fabr_t_list_named(
   flu_list *l, fabr_tree *t, const char *name, int skip)
 {
-  if (t == NULL) return;
-
   if ( ! skip)
   {
     if (t->result != 1) { return; }
@@ -302,8 +300,9 @@ static void fabr_t_list_named(
 
 flu_list *fabr_tree_list_named(fabr_tree *t, const char *name)
 {
-  flu_list *l = flu_list_malloc();
+  if (t == NULL) return NULL;
 
+  flu_list *l = flu_list_malloc();
   fabr_t_list_named(l, t, name, 0);
 
   return l;
@@ -311,8 +310,9 @@ flu_list *fabr_tree_list_named(fabr_tree *t, const char *name)
 
 flu_list *fabr_tree_list_named_cn(fabr_tree *t, const char *name)
 {
-  flu_list *l = flu_list_malloc();
+  if (t == NULL) return NULL;
 
+  flu_list *l = flu_list_malloc();
   fabr_t_list_named(l, t, name, 1);
 
   return l;
@@ -1216,10 +1216,8 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit e3904bec072ed31032efbbf0991913dcd601427f
+//commit 8549c8a26cf41bc6393cbf2ec064bf3ba11e2085
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Thu Jul 9 06:58:07 2015 +0900
+//Date:   Thu Jul 9 08:00:28 2015 +0900
 //
-//    let fabr_tree_list() accept a NULL tree
-//    
-//    and return an empty list
+//    comment out spec debug output
