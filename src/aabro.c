@@ -520,6 +520,10 @@ fabr_tree *fabr_altgr(
         if (winner) { winner->result = 0; winner->length = 0; }
         winner = t;
       }
+      else
+      {
+        t->result = 0;
+      }
     }
 
     p = va_arg(ap, fabr_parser *); if (p == NULL) break;
@@ -703,10 +707,10 @@ static ssize_t quantify(char *rx, size_t rxn, size_t *reps)
 
     char cc = rx_at(rx, rxn, i);
 
-    if (cc == '\0') break;
-    if (cc == ',') comma++; if (comma > 1) break; else continue;
+    if (cc == '\0') { break; }
+    if (cc == ',') { comma++; if (comma > 1) break; /*else*/ continue; }
     if (cc == '}') { z = i; break; }
-    if (cc < '0' || cc > '9') break;
+    if (cc < '0' || cc > '9') { break; }
   }
 
   if (z == 0) return -1; // error
@@ -718,7 +722,7 @@ static ssize_t quantify(char *rx, size_t rxn, size_t *reps)
   char *comma = rx_chr(rx, rxn, ',');
 
   reps[1] = comma == NULL ? reps[0] : strtol(comma + 1, NULL, 10);
-  return z;
+  return z + 1;
 }
 
 static size_t find_range_end(char *rx, size_t rxn)
@@ -888,7 +892,8 @@ static fabr_tree *rex_rep(fabr_input *i, char *rx, size_t rxn)
 
   //printf(
   //  "      %zu qtf >%s<%zu mml %zd mm[%zu, %zu]\n",
-  //  m, rx + z + off, rxn - z - off, mml, mm[0], mm[1]);
+  //  //m, rx + z + off, rxn - z - off, mml, mm[0], mm[1]);
+  //  0, rx + z + off, rxn - z - off, mml, mm[0], mm[1]);
 
   if (mml == -1)
   {
@@ -1041,7 +1046,7 @@ static fabr_tree *rex_alt(fabr_input *i, char *rx, size_t rxn)
     //  m, n, prev->result, prev->length);
     //n++;
 
-    if (prev->result == 1) break;
+    if (prev->result != 0) break;
 
   } while (c != 0);
 
@@ -1083,7 +1088,7 @@ fabr_tree *fabr_eseq(
     fabr_tree *t = startp(i);
     *next = t;
 
-    if (t->result != 1) { r->result = 0; return r; }
+    if (t->result != 1) { r->result = t->result; return r; }
 
     r->length += t->length;
     next = &t->sibling;
@@ -1100,11 +1105,18 @@ fabr_tree *fabr_eseq(
 
     // determine r->result
 
-    if (st && st->result == 0) over = 1;
-    else if (st && st->result == -1) r->result = -1;
-    else if (st && st->result == 1 && st->length == 0 && et->result == 0) over = 2;
-    else if (j == 0 && et && et->result == 0 && jseq == 0) over = 1;
-    else if (et && et->result != 1) r->result = et->result;
+    if (st && st->result == 0)
+      over = 1;
+    else if (st && st->result == -1)
+      r->result = -1;
+    else if (st && st->result == 1 && st->length == 0 && et->result == 0)
+      over = 2;
+    else if (st && st->result == 1 && st->length == 0 && et->result == 1 && et->length == 0)
+      over = 2;
+    else if (j == 0 && et && et->result == 0 && jseq == 0)
+      over = 1;
+    else if (et && et->result != 1)
+      r->result = et->result;
 
     // add or free
 
@@ -1216,8 +1228,10 @@ int fabr_match(const char *input, fabr_parser *p)
   return r;
 }
 
-//commit 8549c8a26cf41bc6393cbf2ec064bf3ba11e2085
+//commit 932612069f2614e398a6038eab7ce33919a3f263
 //Author: John Mettraux <jmettraux@gmail.com>
-//Date:   Thu Jul 9 08:00:28 2015 +0900
+//Date:   Wed Jul 15 06:55:37 2015 +0900
 //
-//    comment out spec debug output
+//    don't let eseq silence errors in its start parser
+//    
+//    closes gh-14
